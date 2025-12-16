@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-// 🛑【關鍵】Google Script 網址
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx2EW2TKQKAW91DI8a-NITQqK7Ys1NNFL0CujKcKU-sdqzzdqx412x-PrFDDZDgCKS7/exec";
+// 🛑【關鍵】已更新為您的新版 Google Script 網址
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyq0KVfpLLIzRUJ5w_rFqZq4C8p97LJOGAU5OkWwts1012zB6-sJIehrtyNLjXepfm5/exec";
 
 // --- Components ---
 
@@ -205,7 +205,7 @@ export default function App() {
     );
   }
 
-  // --- 主畫面 ---
+  // --- 主畫面 (純 CSS 響應式佈局 + 淡入動畫) ---
   return (
     <div className={`min-h-screen font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4 transition-all duration-700 ${styleLoaded ? 'opacity-100' : 'opacity-0'}`}>
       {modalMsg && <Modal message={modalMsg} onClose={() => setModalMsg(null)} />}
@@ -221,7 +221,6 @@ export default function App() {
            <div className="mt-2 space-y-4 text-center w-full brand-section">
               <h2 className="font-bold tracking-widest text-base md:text-lg">薩鉅國際有限公司</h2>
               
-              {/* 手機版強制垂直排列 */}
               <div className="text-xs tracking-wide space-y-2 text-gray-500 flex flex-col items-center gap-1">
                  <p className="flex items-center gap-2">📍 新北市板橋區金門街215巷78-5號</p>
                  <p className="flex items-center gap-2">📞 02-86860028</p>
