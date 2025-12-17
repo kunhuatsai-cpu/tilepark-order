@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-// 🛑【關鍵】已更新為您的新版 Google Script 網址
+// 🛑【關鍵】Google Script 網址
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyq0KVfpLLIzRUJ5w_rFqZq4C8p97LJOGAU5OkWwts1012zB6-sJIehrtyNLjXepfm5/exec";
 
 // --- Components ---
@@ -32,7 +32,6 @@ const Modal = ({ message, onClose }) => (
 );
 
 export default function App() {
-  // 控制初始載入動畫的狀態
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
@@ -43,17 +42,41 @@ export default function App() {
       meta.name = "viewport";
       document.head.appendChild(meta);
     }
-    meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
+    // 加入 viewport-fit=cover 確保滿版
+    meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover";
 
-    // 2. 注入 Tailwind CSS (如果尚未存在)
-    if (!document.querySelector('script[src*="tailwindcss"]')) {
-      const script = document.createElement('script');
-      script.src = "https://cdn.tailwindcss.com";
-      document.head.appendChild(script);
-    }
+    // 2. 注入基本 CSS 重置，防止手機版高度塌陷
+    const style = document.createElement('style');
+    style.innerHTML = `
+      html, body, #root { height: 100%; width: 100%; margin: 0; padding: 0; -webkit-overflow-scrolling: touch; }
+      body { background-color: #ffffff; }
+      .min-h-dvh { min-height: 100vh; min-height: 100dvh; } /* 支援動態視窗高度 */
+    `;
+    document.head.appendChild(style);
 
-    // 3. 設定計時器：1.5秒後關閉載入畫面
-    // 使用 setTimeout 確保即便 CSS 載入慢，使用者也能先看到 Loading 畫面，而不是亂掉的排版
+    // 3. 注入 Tailwind CSS (如果尚未存在) 並監聽載入完成
+    const loadTailwind = () => {
+      if (!document.querySelector('script[src*="tailwindcss"]')) {
+        const script = document.createElement('script');
+        script.src = "https://cdn.tailwindcss.com";
+        script.onload = () => {
+           // Tailwind 載入完成後，稍微延遲一點點確保樣式套用
+           setTimeout(() => setInitialLoading(false), 500);
+        };
+        script.onerror = () => {
+           // 如果載入失敗，也要強制關閉 Loading，避免卡死
+           setInitialLoading(false);
+        };
+        document.head.appendChild(script);
+      } else {
+        // 如果已經有 script，直接設定
+        setTimeout(() => setInitialLoading(false), 500);
+      }
+    };
+
+    loadTailwind();
+
+    // 4. 安全備案：最長只等待 1.5 秒，避免卡在白畫面
     const timer = setTimeout(() => {
       setInitialLoading(false);
     }, 1500);
@@ -61,15 +84,9 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  const [items, setItems] = useState([{ id: 1, name: '', qty: '', note: '' }]);
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [orderId, setOrderId] = useState('');
-  const [modalMsg, setModalMsg] = useState(null);
-  
   const today = new Date().toISOString().split('T')[0];
 
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     orderType: '新案場',
     deliveryDate: today, 
     deliveryTime: '上午 (09:00-12:00)',
@@ -79,12 +96,28 @@ export default function App() {
     orderCompany: '', 
     orderContact: '', 
     orderPhone: '',
-  });
+  };
+
+  const [items, setItems] = useState([{ id: 1, name: '', qty: '', note: '' }]);
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [orderId, setOrderId] = useState('');
+  const [modalMsg, setModalMsg] = useState(null);
+  const [formData, setFormData] = useState(initialFormState);
 
   const addItem = () => setItems([...items, { id: Date.now(), name: '', qty: '', note: '' }]);
   const removeItem = (id) => items.length > 1 && setItems(items.filter(item => item.id !== id));
   const updateItem = (id, field, value) => {
     setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+  };
+
+  const handleReset = () => {
+    setSubmitted(false);
+    setFormData(initialFormState);
+    setItems([{ id: Date.now(), name: '', qty: '', note: '' }]);
+    setOrderId('');
+    setModalMsg(null);
+    window.scrollTo(0, 0);
   };
 
   const handleSubmit = async (e) => {
@@ -121,14 +154,11 @@ export default function App() {
   };
 
   // --- 載入中遮罩 (全螢幕) ---
-  // 🛑 修正：使用 inline style 確保不依賴 Tailwind 載入速度
+  // 🛑 修正：使用 fixed + inset: 0 確保完全覆蓋
   const LoadingOverlay = () => (
     <div style={{
       position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
+      inset: 0, // 替代 top/left/width/height，支援度更好
       backgroundColor: '#ffffff',
       zIndex: 10000,
       display: 'flex',
@@ -139,7 +169,6 @@ export default function App() {
       opacity: initialLoading ? 1 : 0,
       pointerEvents: initialLoading ? 'auto' : 'none',
     }}>
-      {/* 純 CSS 轉圈圈，不依賴 Tailwind */}
       <div style={{
         width: '50px',
         height: '50px',
@@ -167,7 +196,8 @@ export default function App() {
   // --- 成功畫面 ---
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 font-sans animate-fade-in">
+      // 使用 min-h-dvh 確保手機版高度正確
+      <div className="min-h-dvh bg-gray-100 flex flex-col items-center justify-center p-4 font-sans animate-fade-in">
         {modalMsg && <Modal message={modalMsg} onClose={() => setModalMsg(null)} />}
         
         <div className="bg-white w-full max-w-sm shadow-2xl overflow-hidden mb-6 relative rounded-sm">
@@ -223,7 +253,7 @@ export default function App() {
             <span>💬</span> 2. 前往 LINE 確認庫存
           </a>
           
-          <button onClick={() => window.location.reload()} className="w-full py-4 text-xs text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={handleReset} className="w-full py-4 text-xs text-gray-400 hover:text-gray-600 transition-colors">
             返回首頁
           </button>
         </div>
@@ -232,9 +262,9 @@ export default function App() {
   }
 
   // --- 主畫面 ---
-  // 🛑 修正：使用 inline style 確保 visibility 控制準確，解決 FOUC 問題
   return (
-    <div className="min-h-screen font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4 relative">
+    // 使用 min-h-dvh 確保手機版高度正確
+    <div className="min-h-dvh font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4 relative">
       <LoadingOverlay />
       
       {modalMsg && <Modal message={modalMsg} onClose={() => setModalMsg(null)} />}
@@ -255,13 +285,13 @@ export default function App() {
            <div className="hidden md:block w-16 h-0.5 bg-[#c25e00] mt-8 mb-8"></div>
            
            <div className="mt-2 space-y-4 text-center w-full brand-section">
-              <h2 className="font-bold tracking-widest text-base md:text-lg">薩鉅國際有限公司</h2>
-              
-              <div className="text-xs tracking-wide space-y-2 text-gray-500 flex flex-col items-center gap-1">
+             <h2 className="font-bold tracking-widest text-base md:text-lg">薩鉅國際有限公司</h2>
+             
+             <div className="text-xs tracking-wide space-y-2 text-gray-500 flex flex-col items-center gap-1">
                  <p className="flex items-center gap-2">📍 新北市板橋區金門街215巷78-5號</p>
                  <p className="flex items-center gap-2">📞 02-86860028</p>
                  <p className="hidden md:flex items-center gap-2">📠 02-81926543</p>
-              </div>
+             </div>
            </div>
            
            <div className="hidden md:block absolute bottom-6 text-[10px] text-gray-400 font-serif tracking-[0.3em] uppercase">
