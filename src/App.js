@@ -29,7 +29,9 @@ const Modal = ({ message, onClose }) => (
 );
 
 export default function App() {
-  // 移除 styleLoaded 狀態阻擋，改為直接渲染
+  // 新增：初始載入狀態，解決閃爍與空白問題
+  const [initialLoading, setInitialLoading] = useState(true);
+
   useEffect(() => {
     // 1. 確保手機版 Meta Tag 存在 (解決手機版縮放問題)
     if (!document.querySelector('meta[name="viewport"]')) {
@@ -39,12 +41,19 @@ export default function App() {
       document.head.appendChild(meta);
     }
 
-    // 2. 靜默載入 Tailwind CSS (不阻擋畫面)
+    // 2. 靜默載入 Tailwind CSS
     if (!document.querySelector('script[src*="tailwindcss"]')) {
       const script = document.createElement('script');
       script.src = "https://cdn.tailwindcss.com";
       document.head.appendChild(script);
     }
+
+    // 3. 【關鍵修正】強制延遲 1.5 秒，確保 CSS 載入後才顯示畫面
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const [items, setItems] = useState([{ id: 1, name: '', qty: '', note: '' }]);
@@ -80,14 +89,12 @@ export default function App() {
     const submitData = { orderId: newOrderId, items: items, ...formData, timestamp: new Date().toLocaleString() };
 
     try {
-      // 使用 no-cors 模式發送，避免跨域錯誤阻擋 (Google Script 特性)
       await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST', 
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData)
       });
-      // 因 no-cors 無法確認回傳，直接假設成功
       setOrderId(newOrderId);
       setSubmitted(true);
       window.scrollTo(0, 0);
@@ -107,6 +114,17 @@ export default function App() {
     };
     if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => setModalMsg("✅ 複製成功！")).catch(() => fallbackCopy(text)); } else { fallbackCopy(text); }
   };
+
+  // --- 載入中遮罩 (全螢幕) ---
+  // 這會蓋在所有內容之上，解決 FOUC 閃爍問題
+  const LoadingOverlay = () => (
+    <div 
+      className={`fixed inset-0 z-[10000] bg-white flex flex-col items-center justify-center transition-opacity duration-700 ease-out ${initialLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+    >
+      <div className="w-12 h-12 border-4 border-gray-100 border-t-[#c25e00] rounded-full animate-spin mb-4"></div>
+      <div className="text-gray-400 text-xs tracking-[0.3em] font-medium animate-pulse">LOADING</div>
+    </div>
+  );
 
   // --- 成功畫面 ---
   if (submitted) {
@@ -176,12 +194,16 @@ export default function App() {
   }
 
   // --- 主畫面 ---
-  // 移除 opacity 動畫，改為直接顯示，確保不會因為狀態卡住而導致白屏
+  // 加入 LoadingOverlay 與透明度轉場
   return (
-    <div className="min-h-screen font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4">
+    <div className="min-h-screen font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4 relative">
+      <LoadingOverlay />
+      
       {modalMsg && <Modal message={modalMsg} onClose={() => setModalMsg(null)} />}
 
-      <div className="w-full bg-white md:max-w-6xl md:mx-auto md:flex md:shadow-2xl md:rounded-sm md:min-h-[750px] overflow-hidden">
+      <div 
+        className={`w-full bg-white md:max-w-6xl md:mx-auto md:flex md:shadow-2xl md:rounded-sm md:min-h-[750px] overflow-hidden transition-opacity duration-1000 ease-out ${initialLoading ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}
+      >
         
         {/* 左側：品牌區 */}
         <div className="w-full md:w-[35%] bg-white text-[#222] p-8 md:p-12 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gray-100 relative">
