@@ -5,27 +5,20 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyq0KVfpLLIzR
 
 // --- Components ---
 
-// 1. Logo Component
-const Logo = ({ isDark }) => {
+const Logo = () => {
   const logoUrl = "https://lh3.googleusercontent.com/d/1N9nrujoaGkFpdGhsBRgOs_WE-RgQEhU2";
-
   return (
     <div className="flex flex-col items-center justify-center">
       <img 
         src={logoUrl} 
         alt="TILE PARK" 
-        // 尺寸設定：w-60 (手機), md:w-72 (電腦)
-        className="w-60 md:w-72 mb-2 object-contain transition-opacity duration-500"
-        // 強制寫死最大寬度 (Max Width)，防止載入瞬間圖片過大
+        className="w-60 md:w-72 mb-2 object-contain"
         style={{ maxWidth: '240px', height: 'auto' }} 
-        // 針對電腦版放寬限制
-        {...(typeof window !== 'undefined' && window.innerWidth >= 768 ? { style: { maxWidth: '300px', height: 'auto' } } : {})}
       />
     </div>
   );
 };
 
-// 2. 自訂彈出視窗
 const Modal = ({ message, onClose }) => (
   <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 animate-fade-in backdrop-blur-sm">
     <div className="bg-white p-6 w-full max-w-xs shadow-2xl text-center border-t-4 border-[#c25e00] rounded-sm">
@@ -38,20 +31,37 @@ const Modal = ({ message, onClose }) => (
 export default function App() {
   const [styleLoaded, setStyleLoaded] = useState(false);
 
-  // 🔮 自動注入 Tailwind CSS 並防止樣式閃爍
+  // 🔮 修復空白問題的核心邏輯
   useEffect(() => {
-    // 檢查是否已經有 Tailwind
-    if (document.querySelector('script[src*="tailwindcss"]')) {
-      setTimeout(() => setStyleLoaded(true), 500);
-    } else {
-      const script = document.createElement('script');
-      script.src = "https://cdn.tailwindcss.com";
-      // ✨ 關鍵：腳本載入後，再多等 500ms (0.5秒) 才顯示畫面
-      script.onload = () => {
-        setTimeout(() => setStyleLoaded(true), 500);
-      };
-      document.head.appendChild(script);
+    // 1. 確保手機版 Meta Tag 存在 (解決手機版縮放問題)
+    if (!document.querySelector('meta[name="viewport"]')) {
+      const meta = document.createElement('meta');
+      meta.name = "viewport";
+      meta.content = "width=device-width, initial-scale=1, maximum-scale=1";
+      document.head.appendChild(meta);
     }
+
+    // 2. 載入 Tailwind CSS
+    const loadTailwind = () => {
+      if (document.querySelector('script[src*="tailwindcss"]')) {
+        setStyleLoaded(true);
+      } else {
+        const script = document.createElement('script');
+        script.src = "https://cdn.tailwindcss.com";
+        script.onload = () => setStyleLoaded(true);
+        script.onerror = () => setStyleLoaded(true); // 就算失敗也要顯示畫面
+        document.head.appendChild(script);
+      }
+    };
+
+    loadTailwind();
+
+    // 3. 【強制保險】如果 1.5 秒後還沒載入完，強制顯示畫面，避免白屏
+    const fallbackTimer = setTimeout(() => {
+      setStyleLoaded(true);
+    }, 1500);
+
+    return () => clearTimeout(fallbackTimer);
   }, []);
 
   const [items, setItems] = useState([{ id: 1, name: '', qty: '', note: '' }]);
@@ -82,21 +92,27 @@ export default function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!GOOGLE_SCRIPT_URL) { setModalMsg("請設定 Google Script 網址！"); return; }
     setLoading(true);
     const newOrderId = `TILE-${new Date().toISOString().slice(5,10).replace('-','')}${Math.floor(1000 + Math.random() * 9000)}`;
     const submitData = { orderId: newOrderId, items: items, ...formData, timestamp: new Date().toLocaleString() };
 
     try {
+      // 使用 no-cors 模式發送，避免跨域錯誤阻擋 (Google Script 特性)
       await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST', mode: 'no-cors',
+        method: 'POST', 
+        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData)
       });
+      // 因 no-cors 無法確認回傳，直接假設成功
       setOrderId(newOrderId);
       setSubmitted(true);
       window.scrollTo(0, 0);
-    } catch (error) { setModalMsg("連線問題，請截圖傳 LINE。"); } finally { setLoading(false); }
+    } catch (error) { 
+      setModalMsg("連線問題，請截圖傳 LINE。"); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const copyOrder = () => {
@@ -109,50 +125,34 @@ export default function App() {
     if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => setModalMsg("✅ 複製成功！")).catch(() => fallbackCopy(text)); } else { fallbackCopy(text); }
   };
 
-  // ⚠️ 防止 FOUC: 樣式未載入前顯示全白畫面
+  // 如果還沒載入樣式，顯示簡單 Loading，但確保這個 Loading 也是有基本樣式的
   if (!styleLoaded) {
     return (
-      <div style={{ 
-        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
-        backgroundColor: '#fff', zIndex: 99999,
-        display: 'flex', alignItems: 'center', justifyContent: 'center'
-      }}>
-        <div style={{ width: '40px', height: '40px', border: '3px solid #f3f3f3', borderTop: '3px solid #c25e00', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f9fafb' }}>
+        <div style={{ padding: '20px', color: '#666', fontFamily: 'sans-serif' }}>Loading...</div>
       </div>
     );
   }
 
   // --- 成功畫面 ---
   if (submitted) {
-    const logoUrl = "https://lh3.googleusercontent.com/d/1N9nrujoaGkFpdGhsBRgOs_WE-RgQEhU2";
-
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 font-sans animate-fade-in">
         {modalMsg && <Modal message={modalMsg} onClose={() => setModalMsg(null)} />}
         
-        {/* 訂單確認卡片 */}
         <div className="bg-white w-full max-w-sm shadow-2xl overflow-hidden mb-6 relative rounded-sm">
           <div className="h-2 bg-[#c25e00] w-full"></div>
           
           <div className="p-8 pb-6 text-center">
             <div className="flex justify-center mb-6">
-               <img 
-                 src={logoUrl} 
-                 alt="TILE PARK" 
-                 className="w-40 object-contain" 
-                 style={{ maxWidth: '200px', height: 'auto' }}
-               />
+               <img src="https://lh3.googleusercontent.com/d/1N9nrujoaGkFpdGhsBRgOs_WE-RgQEhU2" alt="TILE PARK" className="w-40 object-contain" />
             </div>
             
-            <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm">
-              ✓
-            </div>
+            <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm">✓</div>
             
             <h2 className="text-xl font-bold text-gray-900 mb-1 tracking-wide">訂單已送出</h2>
             <p className="text-xs text-gray-400 mb-6 tracking-wider">ORDER SUBMITTED</p>
 
-            {/* 票券資訊區 */}
             <div className="bg-gray-50 border-2 border-dashed border-gray-200 p-5 text-left space-y-3 rounded-md mb-6 relative">
                <div className="absolute -left-2 top-1/2 w-4 h-4 bg-white rounded-full -mt-2 border-r border-gray-200"></div>
                <div className="absolute -right-2 top-1/2 w-4 h-4 bg-white rounded-full -mt-2 border-l border-gray-200"></div>
@@ -163,14 +163,11 @@ export default function App() {
                    {formData.orderType}
                  </span>
                </div>
-
                <div>
                  <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Order ID</p>
                  <p className="font-mono text-xl font-bold text-[#c25e00] tracking-wider">{orderId}</p>
                </div>
-               
                <div className="h-px bg-gray-200 w-full"></div>
-               
                <div className="flex justify-between text-sm items-baseline">
                  <span className="text-gray-500 text-xs">訂購人</span>
                  <span className="font-bold text-gray-800">{formData.orderContact}</span>
@@ -187,7 +184,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* 動作按鈕 */}
         <div className="w-full max-w-sm space-y-3">
           <button onClick={copyOrder} className="w-full bg-[#333] text-white py-4 font-bold text-sm tracking-widest shadow-md hover:bg-[#c25e00] transition-colors flex items-center justify-center gap-2 rounded-sm active:scale-[0.98]">
             <span>📋</span> 1. 複製訂單資訊
@@ -205,16 +201,16 @@ export default function App() {
     );
   }
 
-  // --- 主畫面 (純 CSS 響應式佈局 + 淡入動畫) ---
+  // --- 主畫面 ---
   return (
-    <div className={`min-h-screen font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4 transition-all duration-700 ${styleLoaded ? 'opacity-100' : 'opacity-0'}`}>
+    <div className="min-h-screen font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4 transition-opacity duration-700">
       {modalMsg && <Modal message={modalMsg} onClose={() => setModalMsg(null)} />}
 
       <div className="w-full bg-white md:max-w-6xl md:mx-auto md:flex md:shadow-2xl md:rounded-sm md:min-h-[750px] overflow-hidden">
         
         {/* 左側：品牌區 */}
-        <div className="w-full md:w-[35%] bg-white text-[#222] p-8 md:p-12 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gray-100 relative transition-colors duration-300">
-           <Logo isDark={false} /> 
+        <div className="w-full md:w-[35%] bg-white text-[#222] p-8 md:p-12 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gray-100 relative">
+           <Logo /> 
            
            <div className="hidden md:block w-16 h-0.5 bg-[#c25e00] mt-8 mb-8"></div>
            
@@ -307,7 +303,6 @@ export default function App() {
                 <span className="text-[#c25e00] font-bold text-lg font-mono">02.</span>
                 <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Delivery / 送貨資訊</h3>
               </div>
-              {/* 改用 grid-cols-1 在手機版單欄顯示，sm (平板以上) 雙欄 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="text-xs text-gray-400 block mb-1">日期</label>
@@ -327,7 +322,6 @@ export default function App() {
               <div className="space-y-4">
                 <input required placeholder="送貨地址" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                   value={formData.deliveryAddress} onChange={e => setFormData({...formData, deliveryAddress: e.target.value})} />
-                {/* 改用 grid-cols-1 在手機版單欄顯示，sm (平板以上) 雙欄 */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input required placeholder="現場聯絡人" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                     value={formData.deliveryContact} onChange={e => setFormData({...formData, deliveryContact: e.target.value})} />
@@ -346,7 +340,6 @@ export default function App() {
               <div className="space-y-4">
                 <input required placeholder="公司寶號 (抬頭)" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                   value={formData.orderCompany} onChange={e => setFormData({...formData, orderCompany: e.target.value})} />
-                {/* 改用 grid-cols-1 在手機版單欄顯示，sm (平板以上) 雙欄 */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <input required placeholder="您的姓名" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                     value={formData.orderContact} onChange={e => setFormData({...formData, orderContact: e.target.value})} />
@@ -364,6 +357,10 @@ export default function App() {
           </form>
         </div>
       </div>
+      <style>{`
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
 }
