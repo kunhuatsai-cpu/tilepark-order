@@ -29,9 +29,7 @@ const Modal = ({ message, onClose }) => (
 );
 
 export default function App() {
-  const [styleLoaded, setStyleLoaded] = useState(false);
-
-  // 🔮 修復空白問題的核心邏輯
+  // 移除 styleLoaded 狀態阻擋，改為直接渲染
   useEffect(() => {
     // 1. 確保手機版 Meta Tag 存在 (解決手機版縮放問題)
     if (!document.querySelector('meta[name="viewport"]')) {
@@ -41,27 +39,12 @@ export default function App() {
       document.head.appendChild(meta);
     }
 
-    // 2. 載入 Tailwind CSS
-    const loadTailwind = () => {
-      if (document.querySelector('script[src*="tailwindcss"]')) {
-        setStyleLoaded(true);
-      } else {
-        const script = document.createElement('script');
-        script.src = "https://cdn.tailwindcss.com";
-        script.onload = () => setStyleLoaded(true);
-        script.onerror = () => setStyleLoaded(true); // 就算失敗也要顯示畫面
-        document.head.appendChild(script);
-      }
-    };
-
-    loadTailwind();
-
-    // 3. 【強制保險】如果 1.5 秒後還沒載入完，強制顯示畫面，避免白屏
-    const fallbackTimer = setTimeout(() => {
-      setStyleLoaded(true);
-    }, 1500);
-
-    return () => clearTimeout(fallbackTimer);
+    // 2. 靜默載入 Tailwind CSS (不阻擋畫面)
+    if (!document.querySelector('script[src*="tailwindcss"]')) {
+      const script = document.createElement('script');
+      script.src = "https://cdn.tailwindcss.com";
+      document.head.appendChild(script);
+    }
   }, []);
 
   const [items, setItems] = useState([{ id: 1, name: '', qty: '', note: '' }]);
@@ -124,15 +107,6 @@ export default function App() {
     };
     if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => setModalMsg("✅ 複製成功！")).catch(() => fallbackCopy(text)); } else { fallbackCopy(text); }
   };
-
-  // 如果還沒載入樣式，顯示簡單 Loading，但確保這個 Loading 也是有基本樣式的
-  if (!styleLoaded) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f9fafb' }}>
-        <div style={{ padding: '20px', color: '#666', fontFamily: 'sans-serif' }}>Loading...</div>
-      </div>
-    );
-  }
 
   // --- 成功畫面 ---
   if (submitted) {
@@ -202,8 +176,9 @@ export default function App() {
   }
 
   // --- 主畫面 ---
+  // 移除 opacity 動畫，改為直接顯示，確保不會因為狀態卡住而導致白屏
   return (
-    <div className="min-h-screen font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4 transition-opacity duration-700">
+    <div className="min-h-screen font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4">
       {modalMsg && <Modal message={modalMsg} onClose={() => setModalMsg(null)} />}
 
       <div className="w-full bg-white md:max-w-6xl md:mx-auto md:flex md:shadow-2xl md:rounded-sm md:min-h-[750px] overflow-hidden">
