@@ -20,7 +20,10 @@ const Logo = () => {
 };
 
 const Modal = ({ message, onClose }) => (
-  <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 animate-fade-in backdrop-blur-sm">
+  <div style={{
+    position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', 
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px'
+  }} className="backdrop-blur-sm animate-fade-in">
     <div className="bg-white p-6 w-full max-w-xs shadow-2xl text-center border-t-4 border-[#c25e00] rounded-sm">
       <div className="mb-6 text-gray-800 font-medium whitespace-pre-wrap leading-relaxed">{message}</div>
       <button onClick={onClose} className="bg-[#222] text-white px-8 py-3 text-sm font-bold tracking-widest hover:bg-[#c25e00] transition-colors w-full rounded-sm">OK</button>
@@ -29,26 +32,28 @@ const Modal = ({ message, onClose }) => (
 );
 
 export default function App() {
-  // 新增：初始載入狀態，解決閃爍與空白問題
+  // 控制初始載入動畫的狀態
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    // 1. 確保手機版 Meta Tag 存在 (解決手機版縮放問題)
-    if (!document.querySelector('meta[name="viewport"]')) {
-      const meta = document.createElement('meta');
+    // 1. 強制設定 Viewport (解決手機版縮放/空白問題)
+    let meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) {
+      meta = document.createElement('meta');
       meta.name = "viewport";
-      meta.content = "width=device-width, initial-scale=1, maximum-scale=1";
       document.head.appendChild(meta);
     }
+    meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
 
-    // 2. 靜默載入 Tailwind CSS
+    // 2. 注入 Tailwind CSS (如果尚未存在)
     if (!document.querySelector('script[src*="tailwindcss"]')) {
       const script = document.createElement('script');
       script.src = "https://cdn.tailwindcss.com";
       document.head.appendChild(script);
     }
 
-    // 3. 【關鍵修正】強制延遲 1.5 秒，確保 CSS 載入後才顯示畫面
+    // 3. 設定計時器：1.5秒後關閉載入畫面
+    // 使用 setTimeout 確保即便 CSS 載入慢，使用者也能先看到 Loading 畫面，而不是亂掉的排版
     const timer = setTimeout(() => {
       setInitialLoading(false);
     }, 1500);
@@ -116,13 +121,46 @@ export default function App() {
   };
 
   // --- 載入中遮罩 (全螢幕) ---
-  // 這會蓋在所有內容之上，解決 FOUC 閃爍問題
+  // 🛑 修正：使用 inline style 確保不依賴 Tailwind 載入速度
   const LoadingOverlay = () => (
-    <div 
-      className={`fixed inset-0 z-[10000] bg-white flex flex-col items-center justify-center transition-opacity duration-700 ease-out ${initialLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-    >
-      <div className="w-12 h-12 border-4 border-gray-100 border-t-[#c25e00] rounded-full animate-spin mb-4"></div>
-      <div className="text-gray-400 text-xs tracking-[0.3em] font-medium animate-pulse">LOADING</div>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: '#ffffff',
+      zIndex: 10000,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'opacity 0.7s ease-out',
+      opacity: initialLoading ? 1 : 0,
+      pointerEvents: initialLoading ? 'auto' : 'none',
+    }}>
+      {/* 純 CSS 轉圈圈，不依賴 Tailwind */}
+      <div style={{
+        width: '50px',
+        height: '50px',
+        border: '4px solid #f3f3f3',
+        borderTop: '4px solid #c25e00',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite',
+        marginBottom: '16px'
+      }}></div>
+      <div style={{
+        color: '#9ca3af',
+        fontSize: '12px',
+        letterSpacing: '0.3em',
+        fontWeight: 500,
+        animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+      }}>LOADING</div>
+      
+      <style>{`
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+      `}</style>
     </div>
   );
 
@@ -194,7 +232,7 @@ export default function App() {
   }
 
   // --- 主畫面 ---
-  // 加入 LoadingOverlay 與透明度轉場
+  // 🛑 修正：使用 inline style 確保 visibility 控制準確，解決 FOUC 問題
   return (
     <div className="min-h-screen font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4 relative">
       <LoadingOverlay />
@@ -202,7 +240,12 @@ export default function App() {
       {modalMsg && <Modal message={modalMsg} onClose={() => setModalMsg(null)} />}
 
       <div 
-        className={`w-full bg-white md:max-w-6xl md:mx-auto md:flex md:shadow-2xl md:rounded-sm md:min-h-[750px] overflow-hidden transition-opacity duration-1000 ease-out ${initialLoading ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}
+        className="w-full bg-white md:max-w-6xl md:mx-auto md:flex md:shadow-2xl md:rounded-sm md:min-h-[750px] overflow-hidden"
+        style={{
+          transition: 'opacity 1s ease-out, transform 1s ease-out',
+          opacity: initialLoading ? 0 : 1,
+          transform: initialLoading ? 'translateY(20px)' : 'translateY(0)',
+        }}
       >
         
         {/* 左側：品牌區 */}
