@@ -239,7 +239,7 @@ export default function App() {
             
             {/* 訂單類型選擇 */}
             <div className="flex flex-col gap-2 mb-2">
-              <label className="text-[10px] text-gray-400 block tracking-widest uppercase font-bold">Order Type / 訂單類型</label>
+              <label className="text-xs text-gray-400 block tracking-widest uppercase font-bold">Order Type / 訂單類型</label>
               <div className="flex gap-4">
                 <button
                   type="button"
@@ -278,17 +278,17 @@ export default function App() {
                   <div key={item.id} className="relative bg-gray-50 p-4 border hover:border-gray-300 transition-colors group">
                     <div className="flex gap-3 mb-2">
                       <div className="flex-[3]">
-                        <label className="text-[10px] text-gray-400 block mb-1">品名 / 型號</label>
-                        <input required className="w-full bg-transparent border-b border-gray-300 focus:border-[#c25e00] outline-none py-1 text-sm rounded-none"
+                        <label className="text-xs text-gray-400 block mb-1">品名 / 型號</label>
+                        <input required className="w-full bg-transparent border-b border-gray-300 focus:border-[#c25e00] outline-none py-1 text-base rounded-none"
                           value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} />
                       </div>
                       <div className="flex-[1]">
-                        <label className="text-[10px] text-gray-400 block mb-1 text-center">數量</label>
-                        <input required className="w-full bg-transparent border-b border-gray-300 focus:border-[#c25e00] outline-none py-1 text-sm text-center rounded-none"
+                        <label className="text-xs text-gray-400 block mb-1 text-center">數量</label>
+                        <input required className="w-full bg-transparent border-b border-gray-300 focus:border-[#c25e00] outline-none py-1 text-base text-center rounded-none"
                           value={item.qty} onChange={e => updateItem(item.id, 'qty', e.target.value)} />
                       </div>
                     </div>
-                    <input placeholder="備註 (批號、使用區域)" className="w-full text-xs text-gray-500 bg-transparent outline-none placeholder-gray-300"
+                    <input placeholder="備註 (批號、使用區域)" className="w-full text-sm text-gray-500 bg-transparent outline-none placeholder-gray-300"
                       value={item.note} onChange={e => updateItem(item.id, 'note', e.target.value)} />
                     {items.length > 1 && (
                       <button type="button" onClick={() => removeItem(item.id)} className="absolute top-2 right-2 text-gray-300 hover:text-red-500 text-lg leading-none p-1">×</button>
@@ -307,15 +307,16 @@ export default function App() {
                 <span className="text-[#c25e00] font-bold text-lg font-mono">02.</span>
                 <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Delivery / 送貨資訊</h3>
               </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* 改用 grid-cols-1 在手機版單欄顯示，sm (平板以上) 雙欄 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1">日期</label>
-                  <input required type="date" className="w-full bg-gray-50 p-2 text-sm border-none outline-none focus:ring-1 focus:ring-[#c25e00]"
+                  <label className="text-xs text-gray-400 block mb-1">日期</label>
+                  <input required type="date" className="w-full bg-gray-50 p-2 text-base border-none outline-none focus:ring-1 focus:ring-[#c25e00]"
                     value={formData.deliveryDate} onChange={e => setFormData({...formData, deliveryDate: e.target.value})} />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1">時間</label>
-                  <select className="w-full bg-gray-50 p-2 text-sm border-none outline-none focus:ring-1 focus:ring-[#c25e00]"
+                  <label className="text-xs text-gray-400 block mb-1">時間</label>
+                  <select className="w-full bg-gray-50 p-2 text-base border-none outline-none focus:ring-1 focus:ring-[#c25e00]"
                     value={formData.deliveryTime} onChange={e => setFormData({...formData, deliveryTime: e.target.value})}>
                     <option>上午 (09-12)</option>
                     <option>下午 (13-17)</option>
@@ -324,12 +325,13 @@ export default function App() {
                 </div>
               </div>
               <div className="space-y-4">
-                <input required placeholder="送貨地址" className="w-full border-b border-gray-200 py-2 text-sm focus:border-[#c25e00] outline-none rounded-none"
+                <input required placeholder="送貨地址" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                   value={formData.deliveryAddress} onChange={e => setFormData({...formData, deliveryAddress: e.target.value})} />
-                <div className="grid grid-cols-2 gap-4">
-                  <input required placeholder="現場聯絡人" className="w-full border-b border-gray-200 py-2 text-sm focus:border-[#c25e00] outline-none rounded-none"
+                {/* 改用 grid-cols-1 在手機版單欄顯示，sm (平板以上) 雙欄 */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <input required placeholder="現場聯絡人" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                     value={formData.deliveryContact} onChange={e => setFormData({...formData, deliveryContact: e.target.value})} />
-                  <input required placeholder="現場電話" type="tel" className="w-full border-b border-gray-200 py-2 text-sm focus:border-[#c25e00] outline-none rounded-none"
+                  <input required placeholder="現場電話" type="tel" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                     value={formData.deliveryPhone} onChange={e => setFormData({...formData, deliveryPhone: e.target.value})} />
                 </div>
               </div>
@@ -342,12 +344,13 @@ export default function App() {
                 <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Client / 訂購人</h3>
               </div>
               <div className="space-y-4">
-                <input required placeholder="公司寶號 (抬頭)" className="w-full border-b border-gray-200 py-2 text-sm focus:border-[#c25e00] outline-none rounded-none"
+                <input required placeholder="公司寶號 (抬頭)" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                   value={formData.orderCompany} onChange={e => setFormData({...formData, orderCompany: e.target.value})} />
-                <div className="grid grid-cols-2 gap-4">
-                   <input required placeholder="您的姓名" className="w-full border-b border-gray-200 py-2 text-sm focus:border-[#c25e00] outline-none rounded-none"
+                {/* 改用 grid-cols-1 在手機版單欄顯示，sm (平板以上) 雙欄 */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <input required placeholder="您的姓名" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                     value={formData.orderContact} onChange={e => setFormData({...formData, orderContact: e.target.value})} />
-                   <input required placeholder="聯絡電話" type="tel" className="w-full border-b border-gray-200 py-2 text-sm focus:border-[#c25e00] outline-none rounded-none"
+                   <input required placeholder="聯絡電話" type="tel" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                     value={formData.orderPhone} onChange={e => setFormData({...formData, orderPhone: e.target.value})} />
                 </div>
               </div>
