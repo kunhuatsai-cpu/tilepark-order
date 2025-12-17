@@ -12,7 +12,7 @@ const Logo = () => {
       <img 
         src={logoUrl} 
         alt="TILE PARK" 
-        className="w-60 md:w-72 mb-2 object-contain"
+        className="w-72 mb-2 object-contain"
         style={{ maxWidth: '240px', height: 'auto' }} 
       />
     </div>
@@ -35,52 +35,39 @@ export default function App() {
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    // 1. 強制設定 Viewport (解決手機版縮放/空白問題)
+    // 1. 設定 Viewport，但這次我們不強制禁止縮放，保留彈性
     let meta = document.querySelector('meta[name="viewport"]');
     if (!meta) {
       meta = document.createElement('meta');
       meta.name = "viewport";
       document.head.appendChild(meta);
     }
-    // 加入 viewport-fit=cover 確保滿版
-    meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover";
+    meta.content = "width=device-width, initial-scale=1.0"; 
 
-    // 2. 注入基本 CSS 重置，防止手機版高度塌陷
+    // 2. 注入基本 CSS
     const style = document.createElement('style');
     style.innerHTML = `
-      html, body, #root { height: 100%; width: 100%; margin: 0; padding: 0; -webkit-overflow-scrolling: touch; }
-      body { background-color: #ffffff; }
-      .min-h-dvh { min-height: 100vh; min-height: 100dvh; } /* 支援動態視窗高度 */
+      html, body, #root { height: 100%; width: 100%; margin: 0; padding: 0; }
+      body { background-color: #e5e5e5; } /* 強制背景色為灰色，與電腦版一致 */
     `;
     document.head.appendChild(style);
 
-    // 3. 注入 Tailwind CSS (如果尚未存在) 並監聽載入完成
+    // 3. 注入 Tailwind CSS
     const loadTailwind = () => {
       if (!document.querySelector('script[src*="tailwindcss"]')) {
         const script = document.createElement('script');
         script.src = "https://cdn.tailwindcss.com";
-        script.onload = () => {
-           // Tailwind 載入完成後，稍微延遲一點點確保樣式套用
-           setTimeout(() => setInitialLoading(false), 500);
-        };
-        script.onerror = () => {
-           // 如果載入失敗，也要強制關閉 Loading，避免卡死
-           setInitialLoading(false);
-        };
+        script.onload = () => setTimeout(() => setInitialLoading(false), 500);
+        script.onerror = () => setInitialLoading(false);
         document.head.appendChild(script);
       } else {
-        // 如果已經有 script，直接設定
         setTimeout(() => setInitialLoading(false), 500);
       }
     };
-
     loadTailwind();
 
-    // 4. 安全備案：最長只等待 1.5 秒，避免卡在白畫面
-    const timer = setTimeout(() => {
-      setInitialLoading(false);
-    }, 1500);
-
+    // 4. 安全備案：最長只等待 1 秒
+    const timer = setTimeout(() => setInitialLoading(false), 1000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -153,70 +140,40 @@ export default function App() {
     if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => setModalMsg("✅ 複製成功！")).catch(() => fallbackCopy(text)); } else { fallbackCopy(text); }
   };
 
-  // --- 載入中遮罩 (全螢幕) ---
-  // 🛑 修正：使用 fixed + inset: 0 確保完全覆蓋
+  // --- 載入中遮罩 ---
   const LoadingOverlay = () => (
     <div style={{
-      position: 'fixed',
-      inset: 0, // 替代 top/left/width/height，支援度更好
-      backgroundColor: '#ffffff',
-      zIndex: 10000,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'opacity 0.7s ease-out',
+      position: 'fixed', inset: 0, backgroundColor: '#ffffff', zIndex: 10000,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      transition: 'opacity 0.5s ease-out',
       opacity: initialLoading ? 1 : 0,
       pointerEvents: initialLoading ? 'auto' : 'none',
     }}>
       <div style={{
-        width: '50px',
-        height: '50px',
-        border: '4px solid #f3f3f3',
-        borderTop: '4px solid #c25e00',
-        borderRadius: '50%',
-        animation: 'spin 1s linear infinite',
-        marginBottom: '16px'
+        width: '50px', height: '50px', border: '4px solid #f3f3f3', borderTop: '4px solid #c25e00',
+        borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '16px'
       }}></div>
-      <div style={{
-        color: '#9ca3af',
-        fontSize: '12px',
-        letterSpacing: '0.3em',
-        fontWeight: 500,
-        animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-      }}>LOADING</div>
-      
-      <style>{`
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
-      `}</style>
+      <div style={{ color: '#9ca3af', fontSize: '12px', letterSpacing: '0.3em', fontWeight: 500 }}>LOADING</div>
+      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
     </div>
   );
 
   // --- 成功畫面 ---
   if (submitted) {
     return (
-      // 使用 min-h-dvh 確保手機版高度正確
-      <div className="min-h-dvh bg-gray-100 flex flex-col items-center justify-center p-4 font-sans animate-fade-in">
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 font-sans animate-fade-in">
         {modalMsg && <Modal message={modalMsg} onClose={() => setModalMsg(null)} />}
-        
         <div className="bg-white w-full max-w-sm shadow-2xl overflow-hidden mb-6 relative rounded-sm">
           <div className="h-2 bg-[#c25e00] w-full"></div>
-          
           <div className="p-8 pb-6 text-center">
             <div className="flex justify-center mb-6">
                <img src="https://lh3.googleusercontent.com/d/1N9nrujoaGkFpdGhsBRgOs_WE-RgQEhU2" alt="TILE PARK" className="w-40 object-contain" />
             </div>
-            
             <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm">✓</div>
-            
             <h2 className="text-xl font-bold text-gray-900 mb-1 tracking-wide">訂單已送出</h2>
             <p className="text-xs text-gray-400 mb-6 tracking-wider">ORDER SUBMITTED</p>
-
+            {/* 成功頁面保持單欄，方便手機閱讀 */}
             <div className="bg-gray-50 border-2 border-dashed border-gray-200 p-5 text-left space-y-3 rounded-md mb-6 relative">
-               <div className="absolute -left-2 top-1/2 w-4 h-4 bg-white rounded-full -mt-2 border-r border-gray-200"></div>
-               <div className="absolute -right-2 top-1/2 w-4 h-4 bg-white rounded-full -mt-2 border-l border-gray-200"></div>
-               
                <div className="flex justify-between items-center mb-2">
                  <span className="text-[10px] text-gray-400 uppercase tracking-wider">Order Type</span>
                  <span className={`text-xs font-bold px-2 py-1 rounded text-white ${formData.orderType === '新案場' ? 'bg-[#c25e00]' : 'bg-gray-700'}`}>
@@ -227,35 +184,17 @@ export default function App() {
                  <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Order ID</p>
                  <p className="font-mono text-xl font-bold text-[#c25e00] tracking-wider">{orderId}</p>
                </div>
-               <div className="h-px bg-gray-200 w-full"></div>
-               <div className="flex justify-between text-sm items-baseline">
-                 <span className="text-gray-500 text-xs">訂購人</span>
-                 <span className="font-bold text-gray-800">{formData.orderContact}</span>
-               </div>
-               <div className="flex justify-between text-sm items-baseline">
-                 <span className="text-gray-500 text-xs">送貨日</span>
-                 <span className="font-bold text-gray-800">{formData.deliveryDate}</span>
-               </div>
             </div>
-
-            <p className="text-xs text-red-500 font-bold bg-red-50 py-2 px-3 rounded-sm">
-              ⚠️ 請務必通知我們，並等待回傳【訂單確認】後，訂單才算成立喔！
-            </p>
           </div>
         </div>
-
         <div className="w-full max-w-sm space-y-3">
-          <button onClick={copyOrder} className="w-full bg-[#333] text-white py-4 font-bold text-sm tracking-widest shadow-md hover:bg-[#c25e00] transition-colors flex items-center justify-center gap-2 rounded-sm active:scale-[0.98]">
+          <button onClick={copyOrder} className="w-full bg-[#333] text-white py-4 font-bold text-sm tracking-widest shadow-md hover:bg-[#c25e00] transition-colors flex items-center justify-center gap-2 rounded-sm">
             <span>📋</span> 1. 複製訂單資訊
           </button>
-          
-          <a href="https://line.me/ti/p/@tileparktw" target="_blank" rel="noreferrer" className="w-full bg-[#06C755] text-white py-4 font-bold text-sm tracking-widest shadow-md hover:bg-[#05b34c] transition-colors flex items-center justify-center gap-2 rounded-sm active:scale-[0.98]">
+          <a href="https://line.me/ti/p/@tileparktw" target="_blank" rel="noreferrer" className="w-full bg-[#06C755] text-white py-4 font-bold text-sm tracking-widest shadow-md hover:bg-[#05b34c] transition-colors flex items-center justify-center gap-2 rounded-sm">
             <span>💬</span> 2. 前往 LINE 確認庫存
           </a>
-          
-          <button onClick={handleReset} className="w-full py-4 text-xs text-gray-400 hover:text-gray-600 transition-colors">
-            返回首頁
-          </button>
+          <button onClick={handleReset} className="w-full py-4 text-xs text-gray-400 hover:text-gray-600 transition-colors">返回首頁</button>
         </div>
       </div>
     );
@@ -263,70 +202,53 @@ export default function App() {
 
   // --- 主畫面 ---
   return (
-    // 使用 min-h-dvh 確保手機版高度正確
-    <div className="min-h-dvh font-sans text-gray-800 bg-white md:bg-[#e5e5e5] md:py-12 md:px-4 relative">
+    // 🛑 重點修正：
+    // 1. 移除 md: 前綴，直接使用 bg-[#e5e5e5]
+    // 2. 加上 overflow-x-auto，如果手機寬度不足，使用者可以左右滑動
+    <div className="min-h-screen font-sans text-gray-800 bg-[#e5e5e5] py-12 px-4 relative overflow-x-auto">
       <LoadingOverlay />
       
       {modalMsg && <Modal message={modalMsg} onClose={() => setModalMsg(null)} />}
 
       <div 
-        className="w-full bg-white md:max-w-6xl md:mx-auto md:flex md:shadow-2xl md:rounded-sm md:min-h-[750px] overflow-hidden"
-        style={{
-          transition: 'opacity 1s ease-out, transform 1s ease-out',
-          opacity: initialLoading ? 0 : 1,
-          transform: initialLoading ? 'translateY(20px)' : 'translateY(0)',
-        }}
+        // 🛑 重點修正：
+        // 1. 移除 opacity 動畫，避免隱形
+        // 2. 移除 flex 的 md: 前綴，強制永遠是 flex (左右排列)
+        // 3. 加上 min-w-[1024px]，強制寬度至少 1024px，確保手機呈現電腦版面 (會有卷軸)
+        className="bg-white max-w-6xl mx-auto flex shadow-2xl rounded-sm min-h-[750px] overflow-hidden min-w-[1024px]"
       >
         
-        {/* 左側：品牌區 */}
-        <div className="w-full md:w-[35%] bg-white text-[#222] p-8 md:p-12 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gray-100 relative">
+        {/* 左側：品牌區 - 永遠佔 35% */}
+        <div className="w-[35%] bg-white text-[#222] p-12 flex flex-col items-center justify-center border-r border-gray-100 relative">
            <Logo /> 
-           
-           <div className="hidden md:block w-16 h-0.5 bg-[#c25e00] mt-8 mb-8"></div>
-           
+           <div className="w-16 h-0.5 bg-[#c25e00] mt-8 mb-8"></div>
            <div className="mt-2 space-y-4 text-center w-full brand-section">
-             <h2 className="font-bold tracking-widest text-base md:text-lg">薩鉅國際有限公司</h2>
-             
+             <h2 className="font-bold tracking-widest text-lg">薩鉅國際有限公司</h2>
              <div className="text-xs tracking-wide space-y-2 text-gray-500 flex flex-col items-center gap-1">
                  <p className="flex items-center gap-2">📍 新北市板橋區金門街215巷78-5號</p>
                  <p className="flex items-center gap-2">📞 02-86860028</p>
-                 <p className="hidden md:flex items-center gap-2">📠 02-81926543</p>
+                 <p className="flex items-center gap-2">📠 02-81926543</p>
              </div>
            </div>
-           
-           <div className="hidden md:block absolute bottom-6 text-[10px] text-gray-400 font-serif tracking-[0.3em] uppercase">
+           <div className="absolute bottom-6 text-[10px] text-gray-400 font-serif tracking-[0.3em] uppercase">
              Authentic Japanese Tiles
            </div>
         </div>
 
-        {/* 右側：表單區 */}
-        <div className="w-full md:w-[65%] bg-white p-5 pb-20 md:p-12 md:overflow-y-auto">
+        {/* 右側：表單區 - 永遠佔 65% */}
+        <div className="w-[65%] bg-white p-12 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-8">
             
             {/* 訂單類型選擇 */}
             <div className="flex flex-col gap-2 mb-2">
               <label className="text-xs text-gray-400 block tracking-widest uppercase font-bold">Order Type / 訂單類型</label>
               <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, orderType: '新案場'})}
-                  className={`flex-1 py-3 text-sm tracking-widest border transition-all duration-200 rounded-sm ${
-                    formData.orderType === '新案場' 
-                      ? 'bg-[#222] text-white border-[#222] shadow-md' 
-                      : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'
-                  }`}
-                >
+                <button type="button" onClick={() => setFormData({...formData, orderType: '新案場'})}
+                  className={`flex-1 py-3 text-sm tracking-widest border transition-all duration-200 rounded-sm ${formData.orderType === '新案場' ? 'bg-[#222] text-white border-[#222] shadow-md' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}>
                   新案場
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, orderType: '案場追加訂單'})}
-                  className={`flex-1 py-3 text-sm tracking-widest border transition-all duration-200 rounded-sm ${
-                    formData.orderType === '案場追加訂單' 
-                      ? 'bg-[#222] text-white border-[#222] shadow-md' 
-                      : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'
-                  }`}
-                >
+                <button type="button" onClick={() => setFormData({...formData, orderType: '案場追加訂單'})}
+                  className={`flex-1 py-3 text-sm tracking-widest border transition-all duration-200 rounded-sm ${formData.orderType === '案場追加訂單' ? 'bg-[#222] text-white border-[#222] shadow-md' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}>
                   追加訂單
                 </button>
               </div>
@@ -338,7 +260,6 @@ export default function App() {
                 <span className="text-[#c25e00] font-bold text-lg font-mono">01.</span>
                 <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Order List / 訂購內容</h3>
               </div>
-
               <div className="space-y-3">
                 {items.map((item) => (
                   <div key={item.id} className="relative bg-gray-50 p-4 border hover:border-gray-300 transition-colors group">
@@ -373,7 +294,7 @@ export default function App() {
                 <span className="text-[#c25e00] font-bold text-lg font-mono">02.</span>
                 <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Delivery / 送貨資訊</h3>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="text-xs text-gray-400 block mb-1">日期</label>
                   <input required type="date" className="w-full bg-gray-50 p-2 text-base border-none outline-none focus:ring-1 focus:ring-[#c25e00]"
@@ -392,7 +313,7 @@ export default function App() {
               <div className="space-y-4">
                 <input required placeholder="送貨地址" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                   value={formData.deliveryAddress} onChange={e => setFormData({...formData, deliveryAddress: e.target.value})} />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <input required placeholder="現場聯絡人" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                     value={formData.deliveryContact} onChange={e => setFormData({...formData, deliveryContact: e.target.value})} />
                   <input required placeholder="現場電話" type="tel" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
@@ -410,7 +331,7 @@ export default function App() {
               <div className="space-y-4">
                 <input required placeholder="公司寶號 (抬頭)" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                   value={formData.orderCompany} onChange={e => setFormData({...formData, orderCompany: e.target.value})} />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                    <input required placeholder="您的姓名" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
                     value={formData.orderContact} onChange={e => setFormData({...formData, orderContact: e.target.value})} />
                    <input required placeholder="聯絡電話" type="tel" className="w-full border-b border-gray-200 py-2 text-base focus:border-[#c25e00] outline-none rounded-none"
@@ -422,7 +343,6 @@ export default function App() {
             <button type="submit" disabled={loading} className="w-full bg-[#222] text-white py-4 font-bold tracking-[0.2em] hover:bg-[#c25e00] transition-colors disabled:bg-gray-400 mt-6 shadow-lg">
               {loading ? '傳送中...' : '送出訂單'}
             </button>
-            
             <p className="text-center text-[10px] text-gray-300 font-serif tracking-widest pt-2">© 2025 TILE PARK TAIWAN</p>
           </form>
         </div>
