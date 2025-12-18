@@ -24,12 +24,12 @@ const Icons = {
 // --- Components ---
 
 const Logo = () => (
-  <div className="flex flex-col items-center justify-center p-4">
+  <div className="flex flex-col items-center justify-center p-2 md:p-4">
     <img 
       src="https://lh3.googleusercontent.com/d/1N9nrujoaGkFpdGhsBRgOs_WE-RgQEhU2" 
       alt="TILE PARK" 
       className="w-48 md:w-64 lg:w-72 object-contain transition-all hover:scale-105"
-      style={{ maxWidth: '280px', height: 'auto' }} 
+      style={{ maxWidth: '260px', height: 'auto' }} 
     />
   </div>
 );
@@ -129,7 +129,6 @@ export default function App() {
     }
   };
 
-  // 🔥 重新優化的複製功能
   const copyOrder = () => {
     const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty} (${it.note || '無備註'})`).join('\n');
     const text = `【Tile Park 訂單通知】\n單號：${orderId}\n類型：${formData.orderType}\n公司：${formData.orderCompany}\n\n訂購內容：\n${itemsList}\n\n送貨日期：${formData.deliveryDate}\n時段：${formData.deliveryTime}\n地址：${formData.deliveryAddress}\n\n請協助確認庫存，謝謝！`;
@@ -188,7 +187,6 @@ export default function App() {
         </div>
         
         <div className="w-full max-w-sm space-y-4">
-           {/* 🔥 找回來的複製按鈕 */}
            <button onClick={copyOrder} className="w-full bg-[#222] text-white py-5 rounded-2xl font-black tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all text-lg group">
              <Icons.Copy size={22} className="group-hover:scale-110 transition-transform" /> 複製訂單內容
            </button>
@@ -203,16 +201,22 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans text-gray-800 selection:bg-[#c25e00] selection:text-white">
+    <div className="min-h-screen bg-gray-100 font-sans text-gray-800 selection:bg-[#c25e00] selection:text-white overflow-x-hidden">
       {modalData && <Modal message={modalData.msg} type={modalData.type} onClose={() => setModalData(null)} />}
 
       <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden">
         
-        <aside className="w-full md:w-[30%] lg:w-[25%] bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col items-center justify-center md:justify-start p-8 md:p-12 md:pt-20 lg:pt-24 relative shrink-0">
+        {/* --- 左側：品牌資訊欄 (優化：手機版與電腦版皆為靠上對齊，確保一上一下佈局) --- */}
+        <aside className="w-full md:w-[30%] lg:w-[25%] bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col items-center justify-start p-8 md:p-12 pt-10 md:pt-20 lg:pt-24 relative shrink-0">
            <Logo />
-           <div className="w-16 h-1 bg-[#c25e00] my-10 rounded-full"></div>
+           
+           {/* 金色分隔線：手機版調小，電腦版保持 */}
+           <div className="w-12 md:w-16 h-1 bg-[#c25e00] my-6 md:my-10 rounded-full"></div>
+           
            <div className="text-center space-y-5">
-              <h2 className="text-2xl font-black tracking-[0.2em] text-gray-900">薩鉅國際有限公司</h2>
+              {/* 公司抬頭：確保緊隨在 LOGO 下方 */}
+              <h2 className="text-xl md:text-2xl font-black tracking-[0.2em] text-gray-900 leading-tight">薩鉅國際有限公司</h2>
+              
               <div className="text-xs md:text-sm text-gray-400 leading-relaxed space-y-4 font-medium">
                  <p className="flex items-center justify-center gap-2 hover:text-gray-600 transition-colors cursor-default">
                     <Icons.Pin size={14}/> 新北市板橋區金門街215巷78-5號
@@ -222,9 +226,11 @@ export default function App() {
                  </p>
               </div>
            </div>
+           
            <div className="hidden md:block absolute bottom-10 text-xs text-gray-300 font-serif tracking-[0.5em] uppercase">Authentic Japanese Tiles</div>
         </aside>
 
+        {/* --- 右側：表單操作區 --- */}
         <main className="flex-1 bg-gray-50 md:overflow-y-auto custom-scrollbar relative">
           <form onSubmit={handleSubmit} className="p-4 md:p-10 lg:p-16 max-w-4xl mx-auto pb-32 md:pb-24">
             <div className="bg-gray-200/50 p-2 rounded-2xl flex mb-12 shadow-inner">
