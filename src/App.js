@@ -18,31 +18,30 @@ const Icons = {
   Pin: (p) => <IconWrapper {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></IconWrapper>,
   Phone: (p) => <IconWrapper {...p}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></IconWrapper>,
   Next: (p) => <IconWrapper {...p}><path d="m9 18 6-6-6-6"/></IconWrapper>,
-  Copy: (p) => <IconWrapper {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconWrapper>,
-  Print: (p) => <IconWrapper {...p}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></IconWrapper>
+  Copy: (p) => <IconWrapper {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconWrapper>
 };
 
 // --- Components ---
 
-const Logo = ({ isMobile = false }) => (
-  <div className={`flex flex-col items-center justify-center ${isMobile ? 'p-2' : 'p-2 md:p-4'}`}>
+const Logo = ({ isMobileHeader = false }) => (
+  <div className={`flex flex-col items-center justify-center ${isMobileHeader ? 'p-2' : 'md:p-4'}`}>
     <img 
       src="https://lh3.googleusercontent.com/d/1N9nrujoaGkFpdGhsBRgOs_WE-RgQEhU2" 
       alt="TILE PARK" 
-      className={`${isMobile ? 'w-40' : 'w-48 md:w-64 lg:w-72'} object-contain transition-all hover:scale-105`}
-      style={{ maxWidth: '280px', height: 'auto' }} 
+      className={`${isMobileHeader ? 'w-40' : 'w-48 md:w-60 lg:w-64'} object-contain transition-all hover:scale-105`}
+      style={{ height: 'auto' }} 
     />
   </div>
 );
 
 const Modal = ({ message, onClose, type = 'success' }) => (
-  <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-6 backdrop-blur-md animate-fade-in">
+  <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-6 backdrop-blur-md animate-fade-in font-sans">
     <div className="bg-white w-full max-w-xs rounded-3xl shadow-2xl overflow-hidden transform transition-all animate-pop-in">
       <div className={`p-8 text-center ${type === 'success' ? 'bg-green-50' : 'bg-orange-50'}`}>
         <div className={`mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-4 ${type === 'success' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-[#c25e00]'}`}>
           {type === 'success' ? <Icons.Check size={28} /> : <Icons.Check size={28} />}
         </div>
-        <div className="text-gray-800 font-bold text-lg mb-2 whitespace-pre-wrap">{message}</div>
+        <div className="text-gray-800 font-bold text-lg mb-2 whitespace-pre-wrap leading-relaxed">{message}</div>
       </div>
       <button onClick={onClose} className="w-full py-5 bg-[#222] text-white font-bold tracking-widest active:bg-black transition-colors">確定</button>
     </div>
@@ -195,7 +194,7 @@ export default function App() {
            <a href="https://line.me/ti/p/@tileparktw" target="_blank" rel="noreferrer" className="w-full bg-[#06C755] text-white py-5 rounded-2xl font-black tracking-widest shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all text-lg">
              前往 LINE 確認庫存
            </a>
-           <button onClick={() => window.location.reload()} className="w-full py-4 text-sm text-gray-400 font-bold tracking-widest uppercase hover:text-gray-600 transition-colors">返回首頁</button>
+           <button onClick={() => window.location.reload()} className="w-full py-4 text-sm text-gray-400 font-bold tracking-widest uppercase hover:text-gray-600 transition-colors font-sans">返回首頁</button>
         </div>
       </div>
     );
@@ -205,29 +204,29 @@ export default function App() {
     <div className="min-h-screen bg-gray-100 font-sans text-gray-800 selection:bg-[#c25e00] selection:text-white overflow-x-hidden">
       {modalData && <Modal message={modalData.msg} type={modalData.type} onClose={() => setModalData(null)} />}
 
-      <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden relative">
+      <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden relative font-sans">
         
-        {/* --- 左側/頂部：品牌區 --- */}
-        <aside className="w-full md:w-[30%] lg:w-[25%] bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col items-center justify-start p-4 md:p-12 pt-6 md:pt-20 lg:pt-24 relative shrink-0">
-           <Logo isMobile={true} />
+        {/* --- 左側品牌區 --- */}
+        <aside className="w-full md:w-[32%] lg:w-[28%] bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col items-center justify-start md:justify-between p-4 md:p-12 pt-6 md:pt-20 lg:pt-24 md:pb-20 relative shrink-0">
            
-           {/* 以下內容在手機版隱藏，在電腦版顯示 */}
-           <div className="hidden md:block w-16 h-1 bg-[#c25e00] my-10 rounded-full"></div>
-           
-           <div className="hidden md:block text-center space-y-5">
-              {/* ✨ 修正：確保公司抬頭不換行，並微調字距確保完整顯示 */}
-              <h2 className="text-xl md:text-2xl font-black tracking-[0.1em] lg:tracking-[0.15em] text-gray-900 leading-tight whitespace-nowrap">薩鉅國際有限公司</h2>
-              <div className="text-xs md:text-sm text-gray-400 leading-relaxed space-y-4 font-medium">
-                 <p className="flex items-center justify-center gap-2 hover:text-gray-600 transition-colors cursor-default">
-                    <Icons.Pin size={14}/> 新北市板橋區金門街215巷78-5號
-                 </p>
-                 <p className="flex items-center justify-center gap-2 hover:text-[#c25e00] transition-colors font-bold text-gray-600">
-                    <Icons.Phone size={14}/> 02-86860028
-                 </p>
-              </div>
+           <div className="flex flex-col items-center w-full">
+              <Logo isMobileHeader={false} />
            </div>
            
-           <div className="hidden md:block absolute bottom-10 text-xs text-gray-300 font-serif tracking-[0.5em] uppercase">Authentic Japanese Tiles</div>
+           <div className="hidden md:flex flex-col items-center text-center w-full px-2">
+              <div className="w-16 h-1.5 bg-[#c25e00] mb-8 rounded-full"></div>
+              <h2 className="text-xl md:text-2xl font-black tracking-[0.05em] lg:tracking-[0.1em] text-gray-900 leading-tight whitespace-nowrap mb-6">薩鉅國際有限公司</h2>
+              
+              <div className="text-xs md:text-sm text-gray-400 leading-relaxed space-y-4 font-medium">
+                 <p className="flex items-center justify-center gap-2 hover:text-gray-600 transition-colors cursor-default whitespace-nowrap">
+                    <Icons.Pin size={14} className="shrink-0 text-[#c25e00]"/> 新北市板橋區金門街215巷78-5號
+                 </p>
+                 <p className="flex items-center justify-center gap-2 hover:text-[#c25e00] transition-colors font-bold text-gray-600">
+                    <Icons.Phone size={14} className="shrink-0"/> 02-86860028
+                 </p>
+              </div>
+              <div className="pt-8 text-[10px] text-gray-300 font-serif tracking-[0.4em] uppercase">Authentic Japanese Tiles</div>
+           </div>
         </aside>
 
         {/* --- 右側：主內容區 --- */}
@@ -263,18 +262,18 @@ export default function App() {
                       <div className="space-y-6">
                         <div className="w-full">
                           <label className="text-xs md:text-sm text-gray-400 font-black uppercase tracking-widest mb-2 block">產品型號 / 品名</label>
-                          <input required className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200"
+                          <input required className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200 font-sans"
                             placeholder="請輸入磁磚型號" value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} />
                         </div>
                         <div className="flex flex-col md:flex-row gap-5">
                           <div className="flex-[2]">
                             <label className="text-xs md:text-sm text-gray-400 font-black uppercase tracking-widest mb-2 block">數量 (片/才)</label>
-                            <input required className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 text-lg md:text-xl font-bold text-center focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all"
+                            <input required className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 text-lg md:text-xl font-bold text-center focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all font-sans"
                               placeholder="0" value={item.qty} onChange={e => updateItem(item.id, 'qty', e.target.value)} />
                           </div>
                           <div className="flex-[3]">
                             <label className="text-xs md:text-sm text-gray-400 font-black uppercase tracking-widest mb-2 block">備註說明</label>
-                            <input className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 text-lg md:text-xl font-medium focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200"
+                            <input className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 text-lg md:text-xl font-medium focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200 font-sans"
                               placeholder="批號或區域" value={item.note} onChange={e => updateItem(item.id, 'note', e.target.value)} />
                           </div>
                         </div>
@@ -299,12 +298,12 @@ export default function App() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">送貨日期</label>
-                      <input required type="date" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold focus:ring-2 focus:ring-[#c25e00]/20"
+                      <input required type="date" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold focus:ring-2 focus:ring-[#c25e00]/20 font-sans"
                         value={formData.deliveryDate} onChange={e => setFormData({...formData, deliveryDate: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">偏好時段</label>
-                      <select className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold focus:ring-2 focus:ring-[#c25e00]/20 appearance-none cursor-pointer"
+                      <select className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold focus:ring-2 focus:ring-[#c25e00]/20 appearance-none cursor-pointer font-sans"
                         value={formData.deliveryTime} onChange={e => setFormData({...formData, deliveryTime: e.target.value})}>
                         <option>上午 (09-12)</option>
                         <option>下午 (13-17)</option>
@@ -314,18 +313,18 @@ export default function App() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">送貨地址</label>
-                    <input required placeholder="請填寫完整配送地址" className="w-full bg-gray-50 border-none rounded-xl p-5 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20"
+                    <input required placeholder="請填寫完整配送地址" className="w-full bg-gray-50 border-none rounded-xl p-5 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 font-sans"
                       value={formData.deliveryAddress} onChange={e => setFormData({...formData, deliveryAddress: e.target.value})} />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-50">
                     <div className="space-y-2">
                       <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">現場收貨人姓名</label>
-                      <input required placeholder="姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold"
+                      <input required placeholder="姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
                         value={formData.deliveryContact} onChange={e => setFormData({...formData, deliveryContact: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">現場聯絡電話</label>
-                      <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold"
+                      <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
                         value={formData.deliveryPhone} onChange={e => setFormData({...formData, deliveryPhone: e.target.value})} />
                     </div>
                   </div>
@@ -338,32 +337,33 @@ export default function App() {
                 <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
                   <div className="space-y-2">
                     <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">公司寶號 (抬頭)</label>
-                    <input required placeholder="請輸入完整公司名稱" className="w-full bg-gray-50 border-none rounded-xl p-5 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20"
+                    <input required placeholder="請輸入完整公司名稱" className="w-full bg-gray-50 border-none rounded-xl p-5 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 font-sans"
                       value={formData.orderCompany} onChange={e => setFormData({...formData, orderCompany: e.target.value})} />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      <div className="space-y-2">
                        <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">訂購經辦人</label>
-                       <input required placeholder="經辦姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold"
+                       <input required placeholder="經辦姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
                         value={formData.orderContact} onChange={e => setFormData({...formData, orderContact: e.target.value})} />
                      </div>
                      <div className="space-y-2">
                        <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">經辦聯絡電話</label>
-                       <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold"
+                       <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
                         value={formData.orderPhone} onChange={e => setFormData({...formData, orderPhone: e.target.value})} />
                      </div>
                   </div>
                 </div>
               </section>
 
-              {/* --- 頁尾資訊區 (手機版顯示：包含公司抬頭、地址、電話) --- */}
-              <div className="mt-8 mb-24 md:mb-12 space-y-5 text-center border-t border-gray-200 pt-10">
+              {/* --- 頁尾資訊區 (優化：電腦版隱藏重複資訊) --- */}
+              {/* ✨ md:hidden 確保在電腦版不會顯示這塊重複的資訊區 */}
+              <div className="mt-8 mb-24 md:hidden space-y-5 text-center border-t border-gray-200 pt-10 px-4">
                 <div className="space-y-4">
-                  {/* ✨ 修正：手機版抬頭也加上 whitespace-nowrap 確保一致性 */}
-                  <h4 className="md:hidden font-black text-gray-900 tracking-[0.2em] text-lg whitespace-nowrap">薩鉅國際有限公司</h4>
-                  <div className="text-[11px] md:text-xs text-gray-400 space-y-3 flex flex-col items-center md:flex-row md:justify-center md:gap-8 font-medium">
-                    <div className="flex items-center gap-2 hover:text-gray-600 transition-colors">
-                      <Icons.Pin size={12} /> 新北市板橋區金門街215巷78-5號
+                  <div className="w-10 h-1 bg-[#c25e00] mx-auto mb-4 rounded-full"></div>
+                  <h4 className="font-black text-gray-900 tracking-[0.1em] text-lg whitespace-nowrap">薩鉅國際有限公司</h4>
+                  <div className="text-[11px] text-gray-400 space-y-3 flex flex-col items-center font-medium">
+                    <div className="flex items-center gap-2 hover:text-gray-600 transition-colors whitespace-nowrap">
+                      <Icons.Pin size={12} className="text-[#c25e00]" /> 新北市板橋區金門街215巷78-5號
                     </div>
                     <div className="flex gap-6 justify-center">
                       <a href="tel:0286860028" className="flex items-center gap-2 hover:text-[#c25e00] transition-colors font-bold text-gray-500">
@@ -386,7 +386,7 @@ export default function App() {
               <button 
                 type="submit" 
                 disabled={loading} 
-                className="w-full bg-[#222] text-white py-6 rounded-3xl font-black tracking-[0.4em] text-xl hover:bg-[#c25e00] hover:shadow-2xl hover:-translate-y-1 transition-all disabled:bg-gray-300 shadow-xl flex items-center justify-center gap-4 active:scale-95 group"
+                className="w-full bg-[#222] text-white py-6 rounded-3xl font-black tracking-[0.4em] text-xl hover:bg-[#c25e00] hover:shadow-2xl hover:-translate-y-1 transition-all disabled:bg-gray-300 shadow-xl flex items-center justify-center gap-4 active:scale-95 group font-sans"
               >
                 {loading ? (
                   <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
