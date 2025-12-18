@@ -17,7 +17,8 @@ const Icons = {
   Check: (p) => <IconWrapper {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconWrapper>,
   Pin: (p) => <IconWrapper {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></IconWrapper>,
   Phone: (p) => <IconWrapper {...p}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></IconWrapper>,
-  Next: (p) => <IconWrapper {...p}><path d="m9 18 6-6-6-6"/></IconWrapper>
+  Next: (p) => <IconWrapper {...p}><path d="m9 18 6-6-6-6"/></IconWrapper>,
+  Copy: (p) => <IconWrapper {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconWrapper>
 };
 
 // --- Components ---
@@ -40,7 +41,7 @@ const Modal = ({ message, onClose, type = 'success' }) => (
         <div className={`mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-4 ${type === 'success' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-[#c25e00]'}`}>
           {type === 'success' ? <Icons.Check size={28} /> : <Icons.Check size={28} />}
         </div>
-        <div className="text-gray-800 font-bold text-lg mb-2">{message}</div>
+        <div className="text-gray-800 font-bold text-lg mb-2 whitespace-pre-wrap">{message}</div>
       </div>
       <button onClick={onClose} className="w-full py-5 bg-[#222] text-white font-bold tracking-widest active:bg-black transition-colors">確定</button>
     </div>
@@ -60,7 +61,6 @@ export default function App() {
   const [styleLoaded, setStyleLoaded] = useState(false);
 
   useEffect(() => {
-    // 1. 強制設定 Viewport
     let meta = document.querySelector('meta[name="viewport"]');
     if (!meta) {
       meta = document.createElement('meta');
@@ -69,7 +69,6 @@ export default function App() {
     }
     meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
 
-    // 2. 載入 Tailwind
     if (!document.querySelector('script[src*="tailwindcss"]')) {
       const script = document.createElement('script');
       script.src = "https://cdn.tailwindcss.com";
@@ -130,6 +129,34 @@ export default function App() {
     }
   };
 
+  // 🔥 重新優化的複製功能
+  const copyOrder = () => {
+    const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty} (${it.note || '無備註'})`).join('\n');
+    const text = `【Tile Park 訂單通知】\n單號：${orderId}\n類型：${formData.orderType}\n公司：${formData.orderCompany}\n\n訂購內容：\n${itemsList}\n\n送貨日期：${formData.deliveryDate}\n時段：${formData.deliveryTime}\n地址：${formData.deliveryAddress}\n\n請協助確認庫存，謝謝！`;
+    
+    const fallbackCopy = (content) => {
+        const ta = document.createElement("textarea"); 
+        ta.value = content; 
+        document.body.appendChild(ta); 
+        ta.select();
+        try { 
+          document.execCommand('copy'); 
+          setModalData({ msg: "✅ 訂單資訊已複製到剪貼簿！", type: 'success' }); 
+        } catch (err) { 
+          setModalData({ msg: "❌ 複製失敗，請手動截圖", type: 'error' }); 
+        }
+        document.body.removeChild(ta);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) { 
+      navigator.clipboard.writeText(text)
+        .then(() => setModalData({ msg: "✅ 訂單資訊已複製到剪貼簿！", type: 'success' }))
+        .catch(() => fallbackCopy(text)); 
+    } else { 
+      fallbackCopy(text); 
+    }
+  };
+
   if (!styleLoaded) {
     return (
       <div className="fixed inset-0 bg-white flex flex-col items-center justify-center">
@@ -142,6 +169,8 @@ export default function App() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6 animate-fade-in">
+        {modalData && <Modal message={modalData.msg} type={modalData.type} onClose={() => setModalData(null)} />}
+        
         <div className="bg-white w-full max-w-sm shadow-2xl rounded-3xl overflow-hidden mb-8 relative border border-gray-100">
           <div className="h-2.5 bg-[#c25e00] w-full"></div>
           <div className="p-10 text-center">
@@ -157,11 +186,17 @@ export default function App() {
             </div>
           </div>
         </div>
+        
         <div className="w-full max-w-sm space-y-4">
+           {/* 🔥 找回來的複製按鈕 */}
+           <button onClick={copyOrder} className="w-full bg-[#222] text-white py-5 rounded-2xl font-black tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all text-lg group">
+             <Icons.Copy size={22} className="group-hover:scale-110 transition-transform" /> 複製訂單內容
+           </button>
+           
            <a href="https://line.me/ti/p/@tileparktw" target="_blank" rel="noreferrer" className="w-full bg-[#06C755] text-white py-5 rounded-2xl font-black tracking-widest shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all text-lg">
              前往 LINE 確認庫存
            </a>
-           <button onClick={() => window.location.reload()} className="w-full py-4 text-sm text-gray-400 font-bold tracking-widest uppercase">返回首頁</button>
+           <button onClick={() => window.location.reload()} className="w-full py-4 text-sm text-gray-400 font-bold tracking-widest uppercase hover:text-gray-600 transition-colors">返回首頁</button>
         </div>
       </div>
     );
@@ -173,7 +208,6 @@ export default function App() {
 
       <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden">
         
-        {/* --- 左側：品牌資訊欄 (電腦版調為 justify-start + 往上移) --- */}
         <aside className="w-full md:w-[30%] lg:w-[25%] bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col items-center justify-center md:justify-start p-8 md:p-12 md:pt-20 lg:pt-24 relative shrink-0">
            <Logo />
            <div className="w-16 h-1 bg-[#c25e00] my-10 rounded-full"></div>
@@ -191,12 +225,8 @@ export default function App() {
            <div className="hidden md:block absolute bottom-10 text-xs text-gray-300 font-serif tracking-[0.5em] uppercase">Authentic Japanese Tiles</div>
         </aside>
 
-        {/* --- 右側：表單操作區 (字體調大優化) --- */}
         <main className="flex-1 bg-gray-50 md:overflow-y-auto custom-scrollbar relative">
-          
           <form onSubmit={handleSubmit} className="p-4 md:p-10 lg:p-16 max-w-4xl mx-auto pb-32 md:pb-24">
-            
-            {/* 訂單類型切換 */}
             <div className="bg-gray-200/50 p-2 rounded-2xl flex mb-12 shadow-inner">
               {['新案場', '案場追加訂單'].map((type) => (
                 <button
@@ -215,8 +245,6 @@ export default function App() {
             </div>
 
             <div className="space-y-16">
-              
-              {/* 1. 訂購清單 */}
               <section className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                 <SectionHeader icon={Icons.Bag} title="訂購內容清單" />
                 <div className="space-y-5">
@@ -255,7 +283,6 @@ export default function App() {
                 </div>
               </section>
 
-              {/* 2. 配送資訊 */}
               <section className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                 <SectionHeader icon={Icons.Truck} title="配送與現場資訊" />
                 <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
@@ -295,7 +322,6 @@ export default function App() {
                 </div>
               </section>
 
-              {/* 3. 訂購人 */}
               <section className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                 <SectionHeader icon={Icons.User} title="訂購客戶資料" />
                 <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
@@ -322,10 +348,8 @@ export default function App() {
               <div className="text-center py-10 opacity-20 hidden md:block">
                 <div className="text-[11px] font-serif tracking-[1.2em] uppercase">TILE PARK TAIWAN</div>
               </div>
-
             </div>
 
-            {/* --- 底部按鈕區 --- */}
             <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-xl border-t border-gray-100 md:static md:bg-transparent md:border-none md:p-0 md:mt-16 z-50">
               <button 
                 type="submit" 
@@ -340,12 +364,10 @@ export default function App() {
               </button>
               <div className="text-center mt-4 text-[11px] text-gray-300 font-bold md:hidden tracking-widest uppercase">© 2025 TILE PARK TAIWAN</div>
             </div>
-
           </form>
         </main>
       </div>
 
-      {/* --- 全局動畫 --- */}
       <style>{`
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
