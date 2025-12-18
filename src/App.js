@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // 🛑 您的 Google Script 網址
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyq0KVfpLLIzRUJ5w_rFqZq4C8p97LJOGAU5OkWwts1012zB6-sJIehrtyNLjXepfm5/exec";
 
-// --- 🛠️ 內建 SVG 圖示 (完全不依賴外部套件，確保載入即顯示) ---
+// --- 🛠️ 內建 SVG 圖示 ---
 const IconWrapper = ({ children, size = 20, className = "", ...props }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
 );
@@ -18,18 +18,19 @@ const Icons = {
   Pin: (p) => <IconWrapper {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></IconWrapper>,
   Phone: (p) => <IconWrapper {...p}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></IconWrapper>,
   Next: (p) => <IconWrapper {...p}><path d="m9 18 6-6-6-6"/></IconWrapper>,
-  Copy: (p) => <IconWrapper {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconWrapper>
+  Copy: (p) => <IconWrapper {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconWrapper>,
+  Print: (p) => <IconWrapper {...p}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></IconWrapper>
 };
 
 // --- Components ---
 
-const Logo = () => (
-  <div className="flex flex-col items-center justify-center p-2 md:p-4">
+const Logo = ({ isMobile = false }) => (
+  <div className={`flex flex-col items-center justify-center ${isMobile ? 'p-2' : 'p-2 md:p-4'}`}>
     <img 
       src="https://lh3.googleusercontent.com/d/1N9nrujoaGkFpdGhsBRgOs_WE-RgQEhU2" 
       alt="TILE PARK" 
-      className="w-48 md:w-64 lg:w-72 object-contain transition-all hover:scale-105"
-      style={{ maxWidth: '260px', height: 'auto' }} 
+      className={`${isMobile ? 'w-40' : 'w-48 md:w-64 lg:w-72'} object-contain transition-all hover:scale-105`}
+      style={{ maxWidth: '280px', height: 'auto' }} 
     />
   </div>
 );
@@ -158,7 +159,7 @@ export default function App() {
 
   if (!styleLoaded) {
     return (
-      <div className="fixed inset-0 bg-white flex flex-col items-center justify-center">
+      <div className="fixed inset-0 bg-white flex flex-col items-center justify-center font-sans">
         <div className="w-12 h-12 border-4 border-gray-100 border-t-[#c25e00] rounded-full animate-spin mb-4"></div>
         <div className="text-[10px] text-gray-400 tracking-[0.3em] font-bold">TILE PARK SYSTEM</div>
       </div>
@@ -167,7 +168,7 @@ export default function App() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6 animate-fade-in">
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6 animate-fade-in font-sans">
         {modalData && <Modal message={modalData.msg} type={modalData.type} onClose={() => setModalData(null)} />}
         
         <div className="bg-white w-full max-w-sm shadow-2xl rounded-3xl overflow-hidden mb-8 relative border border-gray-100">
@@ -186,7 +187,7 @@ export default function App() {
           </div>
         </div>
         
-        <div className="w-full max-w-sm space-y-4">
+        <div className="w-full max-w-sm space-y-4 px-4 md:px-0">
            <button onClick={copyOrder} className="w-full bg-[#222] text-white py-5 rounded-2xl font-black tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all text-lg group">
              <Icons.Copy size={22} className="group-hover:scale-110 transition-transform" /> 複製訂單內容
            </button>
@@ -204,19 +205,18 @@ export default function App() {
     <div className="min-h-screen bg-gray-100 font-sans text-gray-800 selection:bg-[#c25e00] selection:text-white overflow-x-hidden">
       {modalData && <Modal message={modalData.msg} type={modalData.type} onClose={() => setModalData(null)} />}
 
-      <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden">
+      <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden relative">
         
-        {/* --- 左側：品牌資訊欄 (優化：手機版與電腦版皆為靠上對齊，確保一上一下佈局) --- */}
-        <aside className="w-full md:w-[30%] lg:w-[25%] bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col items-center justify-start p-8 md:p-12 pt-10 md:pt-20 lg:pt-24 relative shrink-0">
-           <Logo />
+        {/* --- 左側/頂部：品牌區 --- */}
+        {/* 手機版只顯示 LOGO (justify-start)，電腦版顯示全部 (justify-start + pt) */}
+        <aside className="w-full md:w-[30%] lg:w-[25%] bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col items-center justify-start p-4 md:p-12 pt-6 md:pt-20 lg:pt-24 relative shrink-0">
+           <Logo isMobile={true} />
            
-           {/* 金色分隔線：手機版調小，電腦版保持 */}
-           <div className="w-12 md:w-16 h-1 bg-[#c25e00] my-6 md:my-10 rounded-full"></div>
+           {/* 以下內容在手機版隱藏，在電腦版顯示 */}
+           <div className="hidden md:block w-16 h-1 bg-[#c25e00] my-10 rounded-full"></div>
            
-           <div className="text-center space-y-5">
-              {/* 公司抬頭：確保緊隨在 LOGO 下方 */}
+           <div className="hidden md:block text-center space-y-5">
               <h2 className="text-xl md:text-2xl font-black tracking-[0.2em] text-gray-900 leading-tight">薩鉅國際有限公司</h2>
-              
               <div className="text-xs md:text-sm text-gray-400 leading-relaxed space-y-4 font-medium">
                  <p className="flex items-center justify-center gap-2 hover:text-gray-600 transition-colors cursor-default">
                     <Icons.Pin size={14}/> 新北市板橋區金門街215巷78-5號
@@ -230,9 +230,11 @@ export default function App() {
            <div className="hidden md:block absolute bottom-10 text-xs text-gray-300 font-serif tracking-[0.5em] uppercase">Authentic Japanese Tiles</div>
         </aside>
 
-        {/* --- 右側：表單操作區 --- */}
+        {/* --- 右側：主內容區 --- */}
         <main className="flex-1 bg-gray-50 md:overflow-y-auto custom-scrollbar relative">
           <form onSubmit={handleSubmit} className="p-4 md:p-10 lg:p-16 max-w-4xl mx-auto pb-32 md:pb-24">
+            
+            {/* 訂單類型切換 */}
             <div className="bg-gray-200/50 p-2 rounded-2xl flex mb-12 shadow-inner">
               {['新案場', '案場追加訂單'].map((type) => (
                 <button
@@ -251,6 +253,7 @@ export default function App() {
             </div>
 
             <div className="space-y-16">
+              {/* 1. 訂購內容列表 */}
               <section className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                 <SectionHeader icon={Icons.Bag} title="訂購內容清單" />
                 <div className="space-y-5">
@@ -289,6 +292,7 @@ export default function App() {
                 </div>
               </section>
 
+              {/* 2. 配送資訊 */}
               <section className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                 <SectionHeader icon={Icons.Truck} title="配送與現場資訊" />
                 <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
@@ -328,6 +332,7 @@ export default function App() {
                 </div>
               </section>
 
+              {/* 3. 訂購客戶資料 */}
               <section className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                 <SectionHeader icon={Icons.User} title="訂購客戶資料" />
                 <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
@@ -351,11 +356,32 @@ export default function App() {
                 </div>
               </section>
 
-              <div className="text-center py-10 opacity-20 hidden md:block">
-                <div className="text-[11px] font-serif tracking-[1.2em] uppercase">TILE PARK TAIWAN</div>
+              {/* --- 頁尾資訊區 (手機版顯示：包含公司抬頭、地址、電話) --- */}
+              <div className="mt-8 mb-24 md:mb-12 space-y-5 text-center border-t border-gray-200 pt-10">
+                <div className="space-y-4">
+                  {/* 手機版才會顯示這個抬頭 */}
+                  <h4 className="md:hidden font-black text-gray-900 tracking-[0.2em] text-lg">薩鉅國際有限公司</h4>
+                  <div className="text-[11px] md:text-xs text-gray-400 space-y-3 flex flex-col items-center md:flex-row md:justify-center md:gap-8 font-medium">
+                    <div className="flex items-center gap-2 hover:text-gray-600 transition-colors">
+                      <Icons.Pin size={12} /> 新北市板橋區金門街215巷78-5號
+                    </div>
+                    <div className="flex gap-6 justify-center">
+                      <a href="tel:0286860028" className="flex items-center gap-2 hover:text-[#c25e00] transition-colors font-bold text-gray-500">
+                        <Icons.Phone size={12} /> 02-86860028
+                      </a>
+                      <span className="flex items-center gap-2 text-gray-300">
+                        📠 02-81926543
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[10px] text-gray-300 font-serif tracking-[1em] uppercase py-4">
+                  TILE PARK TAIWAN
+                </div>
               </div>
             </div>
 
+            {/* --- 底部提交按鈕 --- */}
             <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-xl border-t border-gray-100 md:static md:bg-transparent md:border-none md:p-0 md:mt-16 z-50">
               <button 
                 type="submit" 
@@ -368,7 +394,6 @@ export default function App() {
                   <>立即送出訂單 <Icons.Next size={24} className="group-hover:translate-x-2 transition-transform" /></>
                 )}
               </button>
-              <div className="text-center mt-4 text-[11px] text-gray-300 font-bold md:hidden tracking-widest uppercase">© 2025 TILE PARK TAIWAN</div>
             </div>
           </form>
         </main>
