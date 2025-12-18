@@ -208,7 +208,6 @@ export default function App() {
       <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden relative">
         
         {/* --- 左側/頂部：品牌區 --- */}
-        {/* 手機版只顯示 LOGO (justify-start)，電腦版顯示全部 (justify-start + pt) */}
         <aside className="w-full md:w-[30%] lg:w-[25%] bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col items-center justify-start p-4 md:p-12 pt-6 md:pt-20 lg:pt-24 relative shrink-0">
            <Logo isMobile={true} />
            
@@ -216,7 +215,8 @@ export default function App() {
            <div className="hidden md:block w-16 h-1 bg-[#c25e00] my-10 rounded-full"></div>
            
            <div className="hidden md:block text-center space-y-5">
-              <h2 className="text-xl md:text-2xl font-black tracking-[0.2em] text-gray-900 leading-tight">薩鉅國際有限公司</h2>
+              {/* ✨ 修正：確保公司抬頭不換行，並微調字距確保完整顯示 */}
+              <h2 className="text-xl md:text-2xl font-black tracking-[0.1em] lg:tracking-[0.15em] text-gray-900 leading-tight whitespace-nowrap">薩鉅國際有限公司</h2>
               <div className="text-xs md:text-sm text-gray-400 leading-relaxed space-y-4 font-medium">
                  <p className="flex items-center justify-center gap-2 hover:text-gray-600 transition-colors cursor-default">
                     <Icons.Pin size={14}/> 新北市板橋區金門街215巷78-5號
@@ -359,8 +359,8 @@ export default function App() {
               {/* --- 頁尾資訊區 (手機版顯示：包含公司抬頭、地址、電話) --- */}
               <div className="mt-8 mb-24 md:mb-12 space-y-5 text-center border-t border-gray-200 pt-10">
                 <div className="space-y-4">
-                  {/* 手機版才會顯示這個抬頭 */}
-                  <h4 className="md:hidden font-black text-gray-900 tracking-[0.2em] text-lg">薩鉅國際有限公司</h4>
+                  {/* ✨ 修正：手機版抬頭也加上 whitespace-nowrap 確保一致性 */}
+                  <h4 className="md:hidden font-black text-gray-900 tracking-[0.2em] text-lg whitespace-nowrap">薩鉅國際有限公司</h4>
                   <div className="text-[11px] md:text-xs text-gray-400 space-y-3 flex flex-col items-center md:flex-row md:justify-center md:gap-8 font-medium">
                     <div className="flex items-center gap-2 hover:text-gray-600 transition-colors">
                       <Icons.Pin size={12} /> 新北市板橋區金門街215巷78-5號
