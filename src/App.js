@@ -452,25 +452,38 @@ export default function App() {
 
                   <div className="space-y-2">
                     <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">
-                         {isReservation ? "預計送貨地址 (可後補)" : "送貨地址"}
+                         {isReservation ? "預計送貨地址 / 案件名稱 (可後補)" : "送貨地址"}
                     </label>
                     <input 
                         required={!isReservation} // 保留單地址非必填
-                        placeholder={isReservation ? "如未確定可留空" : "請填寫完整配送地址"} 
+                        placeholder={isReservation ? "如未確定可留空，或填寫案件名稱" : "請填寫完整配送地址"} 
                         className="w-full bg-gray-50 border-none rounded-xl p-5 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 font-sans"
                         value={formData.deliveryAddress} onChange={e => setFormData({...formData, deliveryAddress: e.target.value})} 
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-50">
                     <div className="space-y-2">
-                      <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">現場收貨人姓名</label>
-                      <input required placeholder="姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
-                        value={formData.deliveryContact} onChange={e => setFormData({...formData, deliveryContact: e.target.value})} />
+                      <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">
+                          {isReservation ? "現場收貨人姓名 (可後補)" : "現場收貨人姓名"}
+                      </label>
+                      <input 
+                        required={!isReservation}
+                        placeholder={isReservation ? "如未確定可留空" : "姓名"} 
+                        className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
+                        value={formData.deliveryContact} onChange={e => setFormData({...formData, deliveryContact: e.target.value})} 
+                      />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">現場聯絡電話</label>
-                      <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
-                        value={formData.deliveryPhone} onChange={e => setFormData({...formData, deliveryPhone: e.target.value})} />
+                      <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">
+                          {isReservation ? "現場聯絡電話 (可後補)" : "現場聯絡電話"}
+                      </label>
+                      <input 
+                        required={!isReservation}
+                        placeholder={isReservation ? "如未確定可留空" : "電話"} 
+                        type="tel" 
+                        className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
+                        value={formData.deliveryPhone} onChange={e => setFormData({...formData, deliveryPhone: e.target.value})} 
+                      />
                     </div>
                   </div>
                 </div>
