@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // 🛑 您的 Google Script 網址
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyq0KVfpLLIzRUJ5w_rFqZq4C8p97LJOGAU5OkWwts1012zB6-sJIehrtyNLjXepfm5/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKP7YGKdSFYYJMEI2tH7t3u3lILjfc3XGK-xlFx0o3se2_QnnvP-vNtEGcgZXt1Xx7/exec";
 
 // --- 🛠️ 內建 SVG 圖示 ---
 const IconWrapper = ({ children, size = 20, className = "", ...props }) => (
