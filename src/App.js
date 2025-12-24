@@ -20,7 +20,8 @@ const Icons = {
   Next: (p) => <IconWrapper {...p}><path d="m9 18 6-6-6-6"/></IconWrapper>,
   Copy: (p) => <IconWrapper {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconWrapper>,
   Archive: (p) => <IconWrapper {...p}><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></IconWrapper>,
-  Alert: (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></IconWrapper>
+  Alert: (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></IconWrapper>,
+  ChevronDown: (p) => <IconWrapper {...p}><path d="m6 9 6 6 6-6"/></IconWrapper>
 };
 
 // --- Components ---
@@ -51,7 +52,7 @@ const Modal = ({ message, onClose, type = 'success' }) => (
   </div>
 );
 
-// 新增：確認送出 Modal (包含警語)
+// 確認送出 Modal
 const ConfirmModal = ({ onClose, onConfirm, isReservation }) => (
   <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-6 backdrop-blur-md animate-fade-in font-sans">
     <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all animate-pop-in border border-gray-100">
@@ -137,12 +138,13 @@ export default function App() {
     }
   }, []);
 
-  const [items, setItems] = useState([{ id: 1, name: '', qty: '', note: '' }]);
+  // 1. 修改：初始狀態加入 unit: '片'
+  const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '片', note: '' }]);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [modalData, setModalData] = useState(null);
-  const [showConfirm, setShowConfirm] = useState(false); // 控制確認視窗
+  const [showConfirm, setShowConfirm] = useState(false);
   
   const [isReservation, setIsReservation] = useState(false);
   
@@ -160,21 +162,20 @@ export default function App() {
     orderPhone: '',
   });
 
+  // 2. 修改：新增品項時也加入 unit: '片'
   const addItem = () => {
-    setItems([...items, { id: Date.now(), name: '', qty: '', note: '' }]);
+    setItems([...items, { id: Date.now(), name: '', qty: '', unit: '片', note: '' }]);
     setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
   };
 
   const removeItem = (id) => items.length > 1 && setItems(items.filter(item => item.id !== id));
   const updateItem = (id, field, value) => setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
 
-  // 第一階段：表單驗證通過後，開啟確認視窗
   const handleSubmit = (e) => {
     e.preventDefault();
     setShowConfirm(true);
   };
 
-  // 第二階段：使用者確認後，真正送出資料
   const handleFinalSubmit = async () => {
     setShowConfirm(false);
     setLoading(true);
@@ -209,13 +210,13 @@ export default function App() {
     }
   };
 
+  // 3. 修改：複製文字時加入單位顯示
   const copyOrder = () => {
-    const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty} (${it.note || '無備註'})`).join('\n');
+    const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty}${it.unit || '片'} (${it.note || '無備註'})`).join('\n');
     
     const title = isReservation ? '【Tile Park 保留單通知】' : '【Tile Park 訂單通知】';
     const typeLabel = isReservation ? '需求性質：保留庫存' : '需求性質：正式出貨';
     
-    // 根據是否保留，動態調整日期標籤
     const dateLabel = isReservation ? '預計出貨' : '送貨日期';
     const dateInfo = `${dateLabel}：${formData.deliveryDate}`;
 
@@ -275,7 +276,6 @@ export default function App() {
                <div className="flex justify-between text-sm md:text-base"><span className="text-gray-400">{isReservation ? '預計出貨' : '送貨日期'}</span><span className="font-bold">{formData.deliveryDate}</span></div>
             </div>
             
-            {/* 新增：提交成功後，若是保留單，再次顯示提醒文字，加強印象 */}
             {isReservation && (
                 <div className="mt-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100/50 text-xs text-blue-400 leading-relaxed text-justify">
                     *貼心提醒：保留期限原則上為一個月，若有其他正式訂單，庫存將優先分配。
@@ -303,19 +303,18 @@ export default function App() {
     <div className="min-h-screen bg-gray-100 font-sans text-gray-800 selection:bg-[#c25e00] selection:text-white overflow-x-hidden">
       {modalData && <Modal message={modalData.msg} type={modalData.type} onClose={() => setModalData(null)} />}
       
-      {/* 確認送出視窗 */}
       {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} onConfirm={handleFinalSubmit} isReservation={isReservation} />}
 
       <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden relative font-sans">
         
         {/* --- 左側品牌區 --- */}
         <aside className="w-full md:w-[32%] lg:w-[28%] bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col items-center justify-start md:justify-between p-4 md:p-12 pt-6 md:pt-20 lg:pt-24 md:pb-20 relative shrink-0">
-           
-           <div className="flex flex-col items-center w-full">
+            
+            <div className="flex flex-col items-center w-full">
               <Logo isMobileHeader={false} />
-           </div>
-           
-           <div className="hidden md:flex flex-col items-center text-center w-full px-2">
+            </div>
+            
+            <div className="hidden md:flex flex-col items-center text-center w-full px-2">
               <div className="w-16 h-1.5 bg-[#c25e00] mb-8 rounded-full"></div>
               <h2 className="text-xl md:text-2xl font-black tracking-[0.05em] lg:tracking-[0.1em] text-gray-900 leading-tight whitespace-nowrap mb-6">薩鉅國際有限公司</h2>
               
@@ -328,7 +327,7 @@ export default function App() {
                  </p>
               </div>
               <div className="pt-8 text-[10px] text-gray-300 font-serif tracking-[0.4em] uppercase">Authentic Japanese Tiles</div>
-           </div>
+            </div>
         </aside>
 
         {/* --- 右側：主內容區 --- */}
@@ -397,14 +396,32 @@ export default function App() {
                             placeholder="請輸入磁磚型號" value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} />
                         </div>
                         <div className="flex flex-col md:flex-row gap-5">
+                          {/* 4. 修改：數量與單位選擇區塊 (並排顯示) */}
                           <div className="flex-[2]">
-                            <label className="text-xs md:text-sm text-gray-400 font-black uppercase tracking-widest mb-2 block">數量 (片/才)</label>
-                            <input required className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 text-lg md:text-xl font-bold text-center focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all font-sans"
-                              placeholder="0" value={item.qty} onChange={e => updateItem(item.id, 'qty', e.target.value)} />
+                            <label className="text-xs md:text-sm text-gray-400 font-black uppercase tracking-widest mb-2 block">數量 / 單位</label>
+                            <div className="flex gap-2 h-[60px]"> {/* 固定高度確保對齊 */}
+                                <input required className="flex-[2] h-full bg-gray-50 border-none rounded-xl px-5 text-lg md:text-xl font-bold text-center focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all font-sans min-w-0"
+                                placeholder="0" value={item.qty} onChange={e => updateItem(item.id, 'qty', e.target.value)} />
+                                
+                                <div className="flex-1 relative h-full min-w-[90px]">
+                                    <select 
+                                        className="w-full h-full bg-gray-100 border-none rounded-xl pl-4 pr-8 text-lg font-bold text-gray-700 focus:ring-2 focus:ring-[#c25e00]/20 outline-none appearance-none font-sans cursor-pointer hover:bg-gray-200 transition-colors text-center"
+                                        value={item.unit || '片'}
+                                        onChange={e => updateItem(item.id, 'unit', e.target.value)}
+                                    >
+                                        <option value="片">片</option>
+                                        <option value="張">張</option>
+                                        <option value="才">才</option>
+                                    </select>
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                        <Icons.ChevronDown size={16} />
+                                    </div>
+                                </div>
+                            </div>
                           </div>
                           <div className="flex-[3]">
                             <label className="text-xs md:text-sm text-gray-400 font-black uppercase tracking-widest mb-2 block">備註說明</label>
-                            <input className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 text-lg md:text-xl font-medium focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200 font-sans"
+                            <input className="w-full h-[60px] bg-gray-50 border-none rounded-xl px-5 text-lg md:text-xl font-medium focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200 font-sans"
                               placeholder="批號或區域" value={item.note} onChange={e => updateItem(item.id, 'note', e.target.value)} />
                           </div>
                         </div>
@@ -427,7 +444,7 @@ export default function App() {
                 <SectionHeader icon={Icons.Truck} title={isReservation ? "預計需求資訊" : "配送與現場資訊"} />
                 <div className={`bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8 ${isReservation ? 'ring-2 ring-blue-50' : ''}`}>
                   
-                  {/* 日期欄位區塊：根據是否為保留單動態調整 */}
+                  {/* 日期欄位區塊 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     <div className="space-y-2">
@@ -438,7 +455,6 @@ export default function App() {
                         value={formData.deliveryDate} onChange={e => setFormData({...formData, deliveryDate: e.target.value})} />
                     </div>
 
-                    {/* 若非保留單，顯示偏好時段。若為保留單，也顯示但放在後面 */}
                     <div className="space-y-2">
                       <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">偏好時段</label>
                       <select className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold focus:ring-2 focus:ring-[#c25e00]/20 appearance-none cursor-pointer font-sans"
@@ -455,7 +471,7 @@ export default function App() {
                          {isReservation ? "預計送貨地址 / 案件名稱 (可後補)" : "送貨地址"}
                     </label>
                     <input 
-                        required={!isReservation} // 保留單地址非必填
+                        required={!isReservation}
                         placeholder={isReservation ? "如未確定可留空，或填寫案件名稱" : "請填寫完整配送地址"} 
                         className="w-full bg-gray-50 border-none rounded-xl p-5 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 font-sans"
                         value={formData.deliveryAddress} onChange={e => setFormData({...formData, deliveryAddress: e.target.value})} 
@@ -499,21 +515,21 @@ export default function App() {
                       value={formData.orderCompany} onChange={e => setFormData({...formData, orderCompany: e.target.value})} />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div className="space-y-2">
-                       <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">訂購經辦人</label>
-                       <input required placeholder="經辦姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
+                      <div className="space-y-2">
+                        <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">訂購經辦人</label>
+                        <input required placeholder="經辦姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
                         value={formData.orderContact} onChange={e => setFormData({...formData, orderContact: e.target.value})} />
-                     </div>
-                     <div className="space-y-2">
-                       <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">經辦聯絡電話</label>
-                       <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">經辦聯絡電話</label>
+                        <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
                         value={formData.orderPhone} onChange={e => setFormData({...formData, orderPhone: e.target.value})} />
-                     </div>
+                      </div>
                   </div>
                 </div>
               </section>
 
-              {/* --- 頁尾資訊區 (優化：電腦版隱藏重複資訊) --- */}
+              {/* --- 頁尾資訊區 --- */}
               <div className="mt-8 mb-24 md:hidden space-y-5 text-center border-t border-gray-200 pt-10 px-4">
                 <div className="space-y-4">
                   <div className="w-10 h-1 bg-[#c25e00] mx-auto mb-4 rounded-full"></div>
@@ -551,8 +567,8 @@ export default function App() {
                   <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
                 ) : (
                   <>
-                     {isReservation ? '送出保留單' : '送出訂單'} 
-                     <Icons.Next size={24} className="group-hover:translate-x-2 transition-transform" />
+                      {isReservation ? '送出保留單' : '送出訂單'} 
+                      <Icons.Next size={24} className="group-hover:translate-x-2 transition-transform" />
                   </>
                 )}
               </button>
