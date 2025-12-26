@@ -259,7 +259,7 @@
 
           const [rememberMe, setRememberMe] = useState(true); // 🌟 新增：記住我狀態
 
-          const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '箱', note: '' }]); 
+          const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '片', note: '' }]); 
           const [loading, setLoading] = useState(false);
           const [submitted, setSubmitted] = useState(false);
           const [orderId, setOrderId] = useState('');
@@ -320,7 +320,7 @@
           }, []);
 
           const addItem = () => {
-            setItems([...items, { id: Date.now(), name: '', qty: '', unit: '箱', note: '' }]);
+            setItems([...items, { id: Date.now(), name: '', qty: '', unit: '片', note: '' }]);
             setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
           };
 
@@ -331,7 +331,7 @@
           };
 
           const handleProductSelect = (id, product) => {
-            const displayName = product.name; // 🌟 修改：只顯示產品名稱，不含貨號
+            const displayName = product.name; // 🌟 只顯示產品名稱
             const packingNote = product.packing ? `一箱${product.packing}片` : '';
             
             setItems(items.map(item => {
@@ -340,7 +340,7 @@
                 return { 
                   ...item, 
                   name: displayName,
-                  unit: product.unit || '箱',
+                  unit: product.unit || '片',
                   note: newNote
                 };
               }
@@ -375,7 +375,7 @@
 
             const itemsForBackend = items.map(item => ({
                 ...item,
-                qty: `${item.qty}${item.unit || '箱'}` 
+                qty: `${item.qty}${item.unit || '片'}` 
             }));
 
             const submitData = { 
@@ -403,7 +403,7 @@
           };
 
           const copyOrder = () => {
-            const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty}${it.unit || '箱'} (${it.note || '無備註'})`).join('\n');
+            const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty}${it.unit || '片'} (${it.note || '無備註'})`).join('\n');
             const title = isReservation ? '【Tile Park 保留單通知】' : '【Tile Park 訂單通知】';
             const typeLabel = isReservation ? '需求性質：保留庫存' : '需求性質：正式出貨';
             const dateLabel = isReservation ? '預計出貨' : '送貨日期';
@@ -571,8 +571,33 @@
                     </div>
 
                     <div className="space-y-16">
-                      {/* 1. 訂購內容列表 */}
+                      
+                      {/* 1. 訂購客戶資料 (已移到最上方) */}
                       <section className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                        <SectionHeader icon={Icons.User} title="訂購客戶資料" />
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
+                          <div className="space-y-2">
+                            <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">公司寶號 (抬頭)</label>
+                            <input required placeholder="請輸入完整公司名稱" className="w-full bg-gray-50 border-none rounded-xl p-5 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 font-sans"
+                              value={formData.orderCompany} onChange={e => setFormData({...formData, orderCompany: e.target.value})} />
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">訂購經辦人</label>
+                                <input required placeholder="經辦姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
+                                value={formData.orderContact} onChange={e => setFormData({...formData, orderContact: e.target.value})} />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">經辦聯絡電話</label>
+                                <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
+                                value={formData.orderPhone} onChange={e => setFormData({...formData, orderPhone: e.target.value})} />
+                              </div>
+                          </div>
+                        </div>
+                      </section>
+
+                      {/* 2. 訂購內容列表 */}
+                      <section className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                         <SectionHeader icon={isReservation ? Icons.Archive : Icons.Bag} title={isReservation ? "保留品項清單" : "訂購內容清單"} />
                         <div className="space-y-5">
                           {items.map((item, index) => (
@@ -601,14 +626,12 @@
                                         <div className="flex-1 relative h-full min-w-[90px]">
                                             <select 
                                                 className="w-full h-full bg-gray-100 border-none rounded-xl pl-4 pr-8 text-lg font-bold text-gray-700 focus:ring-2 focus:ring-[#c25e00]/20 outline-none appearance-none font-sans cursor-pointer hover:bg-gray-200 transition-colors text-center"
-                                                value={item.unit || '箱'}
+                                                value={item.unit || '片'}
                                                 onChange={e => updateItem(item.id, 'unit', e.target.value)}
                                             >
-                                                <option value="箱">箱</option>
                                                 <option value="片">片</option>
                                                 <option value="張">張</option>
                                                 <option value="才">才</option>
-                                                <option value="組">組</option>
                                                 <option value="支">支</option>
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
@@ -637,8 +660,8 @@
                         </div>
                       </section>
 
-                      {/* 2. 配送/保留資訊 */}
-                      <section className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                      {/* 3. 配送/保留資訊 */}
+                      <section className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                         <SectionHeader icon={Icons.Truck} title={isReservation ? "預計需求資訊" : "配送與現場資訊"} />
                         <div className={`bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8 ${isReservation ? 'ring-2 ring-blue-50' : ''}`}>
                           
@@ -699,30 +722,6 @@
                                 value={formData.deliveryPhone} onChange={e => setFormData({...formData, deliveryPhone: e.target.value})} 
                               />
                             </div>
-                          </div>
-                        </div>
-                      </section>
-
-                      {/* 3. 訂購客戶資料 */}
-                      <section className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                        <SectionHeader icon={Icons.User} title="訂購客戶資料" />
-                        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
-                          <div className="space-y-2">
-                            <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">公司寶號 (抬頭)</label>
-                            <input required placeholder="請輸入完整公司名稱" className="w-full bg-gray-50 border-none rounded-xl p-5 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 font-sans"
-                              value={formData.orderCompany} onChange={e => setFormData({...formData, orderCompany: e.target.value})} />
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div className="space-y-2">
-                                <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">訂購經辦人</label>
-                                <input required placeholder="經辦姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
-                                value={formData.orderContact} onChange={e => setFormData({...formData, orderContact: e.target.value})} />
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">經辦聯絡電話</label>
-                                <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
-                                value={formData.orderPhone} onChange={e => setFormData({...formData, orderPhone: e.target.value})} />
-                              </div>
                           </div>
                         </div>
                       </section>
