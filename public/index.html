@@ -419,15 +419,18 @@
             };
 
             try {
-              // 🌟 關鍵修正：將 Content-Type 改為 text/plain，防止瀏覽器發送 Preflight OPTIONS 請求
-              // 這樣 no-cors 模式才能正確傳送資料給 Google Apps Script
+              // 🌟 關鍵修正：改用 form-urlencoded 方式傳送，對應 GAS 的 e.parameter.payload
+              // 這通常比 raw postData 更穩定，且一定會命中後端的第一個判斷式
+              const formDataEncoded = new URLSearchParams();
+              formDataEncoded.append('payload', JSON.stringify(submitData));
+
               await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 
-                  'Content-Type': 'text/plain;charset=utf-8' 
+                  'Content-Type': 'application/x-www-form-urlencoded' 
                 },
-                body: JSON.stringify(submitData)
+                body: formDataEncoded.toString()
               });
               
               setOrderId(newOrderId);
