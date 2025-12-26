@@ -447,7 +447,8 @@
             const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty}${it.unit || '片'} (${it.note || '無備註'})`).join('\n');
             const title = isReservation ? '【Tile Park 保留單通知】' : '【Tile Park 訂單通知】';
             const typeLabel = isReservation ? '需求性質：保留庫存' : '需求性質：正式出貨';
-            const dateLabel = isReservation ? '預計出貨' : '送貨日期';
+            // 🟢 修正：送貨日期 -> 出貨日期
+            const dateLabel = isReservation ? '預計出貨' : '出貨日期';
             const dateInfo = `${dateLabel}：${formData.deliveryDate}`;
 
             const text = `${title}\n單號：${orderId}\n類型：${formData.orderType}\n${typeLabel}\n公司：${formData.orderCompany}\n\n訂購內容：\n${itemsList}\n\n${dateInfo}\n時段：${formData.deliveryTime}\n地址：${formData.deliveryAddress}\n\n請協助確認，謝謝！`;
@@ -503,7 +504,8 @@
                     <div className="bg-gray-50 rounded-2xl p-6 text-left space-y-4 border border-gray-100">
                        <div className="flex justify-between text-sm md:text-base"><span className="text-gray-400">訂購公司</span><span className="font-bold">{formData.orderCompany}</span></div>
                        <div className="flex justify-between text-sm md:text-base"><span className="text-gray-400">類型</span><span className="font-bold">{isReservation ? '保留庫存' : '正式出貨'}</span></div>
-                       <div className="flex justify-between text-sm md:text-base"><span className="text-gray-400">{isReservation ? '預計出貨' : '送貨日期'}</span><span className="font-bold">{formData.deliveryDate}</span></div>
+                       {/* 🟢 修正：送貨日期 -> 出貨日期 */}
+                       <div className="flex justify-between text-sm md:text-base"><span className="text-gray-400">{isReservation ? '預計出貨' : '出貨日期'}</span><span className="font-bold">{formData.deliveryDate}</span></div>
                     </div>
                     
                     {isReservation && (
@@ -625,12 +627,14 @@
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div className="space-y-2">
                                 <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">訂購經辦人</label>
-                                <input required placeholder="經辦姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
+                                {/* 🟢 修正：移除 required */}
+                                <input placeholder="經辦姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
                                 value={formData.orderContact} onChange={e => setFormData({...formData, orderContact: e.target.value})} />
                               </div>
                               <div className="space-y-2">
                                 <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">經辦聯絡電話</label>
-                                <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
+                                {/* 🟢 修正：移除 required */}
+                                <input placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
                                 value={formData.orderPhone} onChange={e => setFormData({...formData, orderPhone: e.target.value})} />
                               </div>
                           </div>
@@ -720,8 +724,9 @@
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                             <div className="space-y-2">
+                              {/* 🟢 修正：送貨日期 -> 出貨日期 */}
                               <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">
-                                  {isReservation ? "預計出貨日期" : "送貨日期"}
+                                  {isReservation ? "預計出貨日期" : "出貨日期"}
                               </label>
                               <input required type="date" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold focus:ring-2 focus:ring-[#c25e00]/20 font-sans"
                                 value={formData.deliveryDate} onChange={e => setFormData({...formData, deliveryDate: e.target.value})} />
