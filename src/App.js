@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-// 🛑 您的 Google Script 網址
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKP7YGKdSFYYJMEI2tH7t3u3lILjfc3XGK-xlFx0o3se2_QnnvP-vNtEGcgZXt1Xx7/exec";
+// 🛑 您的 Google Script 網址 (已更新為您提供的新網址)
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxfOb6lYOtQnvnQ0GXSfnIMtHF2sDi6hcuthiKX0QP4I5RsI93BgcV9QS_p0Bw1icf1BQ/exec";
 
 // --- 🛠️ 內建 SVG 圖示 ---
 const IconWrapper = ({ children, size = 20, className = "", ...props }) => (
@@ -21,7 +21,8 @@ const Icons = {
   Copy: (p) => <IconWrapper {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconWrapper>,
   Archive: (p) => <IconWrapper {...p}><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></IconWrapper>,
   Alert: (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></IconWrapper>,
-  ChevronDown: (p) => <IconWrapper {...p}><path d="m6 9 6 6 6-6"/></IconWrapper>
+  ChevronDown: (p) => <IconWrapper {...p}><path d="m6 9 6 6 6-6"/></IconWrapper>,
+  Search: (p) => <IconWrapper {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></IconWrapper>
 };
 
 // --- Components ---
@@ -37,7 +38,6 @@ const Logo = ({ isMobileHeader = false }) => (
   </div>
 );
 
-// 一般訊息 Modal
 const Modal = ({ message, onClose, type = 'success' }) => (
   <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-6 backdrop-blur-md animate-fade-in font-sans">
     <div className="bg-white w-full max-w-xs rounded-3xl shadow-2xl overflow-hidden transform transition-all animate-pop-in">
@@ -52,7 +52,6 @@ const Modal = ({ message, onClose, type = 'success' }) => (
   </div>
 );
 
-// 確認送出 Modal
 const ConfirmModal = ({ onClose, onConfirm, isReservation }) => (
   <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-6 backdrop-blur-md animate-fade-in font-sans">
     <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all animate-pop-in border border-gray-100">
@@ -78,9 +77,6 @@ const ConfirmModal = ({ onClose, onConfirm, isReservation }) => (
                     <p className="font-bold mb-1 text-blue-900">保留期限一個月</p>
                     <p className="text-blue-700/80 text-xs leading-relaxed text-justify">若有其他客戶下單，庫存將優先配給已確認訂單的客戶。</p>
                   </div>
-               </div>
-               <div className="pt-2 border-t border-blue-100 text-center">
-                  <p className="text-[10px] text-blue-400 font-medium">感謝體諒，庫存緊張時我們會盡量提醒您 🙏</p>
                </div>
             </div>
         ) : (
@@ -116,11 +112,91 @@ const SectionHeader = ({ icon: Icon, title }) => (
   </div>
 );
 
-export default function App() {
-  const [styleLoaded, setStyleLoaded] = useState(false);
+// --- 🌟 新增：產品搜尋建議組件 ---
+const ProductAutocomplete = ({ value, onChange, onSelect, productList }) => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapperRef = useRef(null);
 
   useEffect(() => {
-    // 設定網頁標題
+    // 點擊外部關閉建議選單
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleInputChange = (e) => {
+    const inputVal = e.target.value;
+    onChange(inputVal);
+
+    if (inputVal.length > 0 && productList.length > 0) {
+      const filtered = productList.filter(p => 
+        (p.id && p.id.toLowerCase().includes(inputVal.toLowerCase())) || 
+        (p.name && p.name.toLowerCase().includes(inputVal.toLowerCase()))
+      ).slice(0, 10); // 只顯示前10筆
+      setSuggestions(filtered);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelect = (product) => {
+    onSelect(product);
+    setShowSuggestions(false);
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative w-full">
+      <div className="relative">
+        <input 
+          required 
+          className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 pl-12 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200 font-sans"
+          placeholder="輸入貨號或品名搜尋" 
+          value={value} 
+          onChange={handleInputChange} 
+          onFocus={() => value && suggestions.length > 0 && setShowSuggestions(true)}
+        />
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none">
+            <Icons.Search size={20} />
+        </div>
+      </div>
+      
+      {showSuggestions && suggestions.length > 0 && (
+        <ul className="absolute z-50 w-full bg-white border border-gray-100 rounded-xl mt-2 shadow-2xl max-h-60 overflow-y-auto custom-scrollbar animate-fade-in">
+          {suggestions.map((p, idx) => (
+            <li 
+              key={idx} 
+              onClick={() => handleSelect(p)}
+              className="px-5 py-3 hover:bg-orange-50 cursor-pointer transition-colors border-b border-gray-50 last:border-none group"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                    <span className="font-bold text-[#c25e00] mr-2">{p.id}</span>
+                    <span className="text-gray-700 font-medium">{p.name}</span>
+                </div>
+                {p.packing && <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">{p.packing}片/箱</span>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+export default function App() {
+  const [styleLoaded, setStyleLoaded] = useState(false);
+  
+  // 🌟 新增：產品清單 State
+  const [productList, setProductList] = useState([]);
+  const [isProductLoading, setIsProductLoading] = useState(true);
+
+  useEffect(() => {
     document.title = "Tile Park 訂貨系統";
 
     let meta = document.querySelector('meta[name="viewport"]');
@@ -139,9 +215,23 @@ export default function App() {
     } else {
       setStyleLoaded(true);
     }
+
+    // 🌟 載入時抓取產品清單
+    fetch(`${GOOGLE_SCRIPT_URL}?action=getProducts`)
+      .then(res => res.json())
+      .then(data => {
+        console.log("Products Loaded:", data);
+        setProductList(data);
+        setIsProductLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to load products:", err);
+        setIsProductLoading(false);
+      });
+
   }, []);
 
-  const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '片', note: '' }]);
+  const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '箱', note: '' }]); // 預設單位改為'箱'
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [orderId, setOrderId] = useState('');
@@ -165,12 +255,38 @@ export default function App() {
   });
 
   const addItem = () => {
-    setItems([...items, { id: Date.now(), name: '', qty: '', unit: '片', note: '' }]);
+    setItems([...items, { id: Date.now(), name: '', qty: '', unit: '箱', note: '' }]);
     setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
   };
 
   const removeItem = (id) => items.length > 1 && setItems(items.filter(item => item.id !== id));
-  const updateItem = (id, field, value) => setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+  
+  const updateItem = (id, field, value) => {
+    setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+  };
+
+  // 🌟 新增：處理產品選擇
+  const handleProductSelect = (id, product) => {
+    const displayName = `${product.id} ${product.name}`;
+    
+    // 自動帶入裝箱數到備註
+    const packingNote = product.packing ? `一箱${product.packing}片` : '';
+    
+    setItems(items.map(item => {
+      if (item.id === id) {
+        // 如果原本備註有內容，保留並加上新備註
+        const newNote = item.note ? `${item.note}, ${packingNote}` : packingNote;
+        
+        return { 
+          ...item, 
+          name: displayName,
+          unit: product.unit || '箱', // 自動帶入單位，若無則預設箱
+          note: newNote
+        };
+      }
+      return item;
+    }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -187,16 +303,15 @@ export default function App() {
       ? `${formData.orderType} (保留庫存)` 
       : formData.orderType;
 
-    // 🌟 關鍵修改：將單位 (unit) 合併到數量 (qty) 中傳送給後端
-    // 這樣即使 Google Script 沒有讀取 unit 欄位，數量欄位也會變成 "10片"
+    // 將單位合併到數量
     const itemsForBackend = items.map(item => ({
         ...item,
-        qty: `${item.qty}${item.unit || '片'}` 
+        qty: `${item.qty}${item.unit || '箱'}` 
     }));
 
     const submitData = { 
         orderId: newOrderId, 
-        items: itemsForBackend, // 傳送包含單位的資料
+        items: itemsForBackend, 
         ...formData, 
         orderType: finalOrderType, 
         timestamp: new Date().toLocaleString() 
@@ -219,7 +334,7 @@ export default function App() {
   };
 
   const copyOrder = () => {
-    const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty}${it.unit || '片'} (${it.note || '無備註'})`).join('\n');
+    const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty}${it.unit || '箱'} (${it.note || '無備註'})`).join('\n');
     
     const title = isReservation ? '【Tile Park 保留單通知】' : '【Tile Park 訂單通知】';
     const typeLabel = isReservation ? '需求性質：保留庫存' : '需求性質：正式出貨';
@@ -399,8 +514,13 @@ export default function App() {
                       <div className="space-y-6">
                         <div className="w-full">
                           <label className="text-xs md:text-sm text-gray-400 font-black uppercase tracking-widest mb-2 block">產品型號 / 品名</label>
-                          <input required className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200 font-sans"
-                            placeholder="請輸入磁磚型號" value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} />
+                          {/* 🌟 修改：使用搜尋建議組件 */}
+                          <ProductAutocomplete 
+                            value={item.name} 
+                            onChange={(val) => updateItem(item.id, 'name', val)}
+                            onSelect={(product) => handleProductSelect(item.id, product)}
+                            productList={productList}
+                          />
                         </div>
                         <div className="flex flex-col md:flex-row gap-5">
                           {/* 4. 修改：數量與單位選擇區塊 (並排顯示) */}
@@ -413,13 +533,13 @@ export default function App() {
                                 <div className="flex-1 relative h-full min-w-[90px]">
                                     <select 
                                         className="w-full h-full bg-gray-100 border-none rounded-xl pl-4 pr-8 text-lg font-bold text-gray-700 focus:ring-2 focus:ring-[#c25e00]/20 outline-none appearance-none font-sans cursor-pointer hover:bg-gray-200 transition-colors text-center"
-                                        value={item.unit || '片'}
+                                        value={item.unit || '箱'}
                                         onChange={e => updateItem(item.id, 'unit', e.target.value)}
                                     >
+                                        <option value="箱">箱</option>
                                         <option value="片">片</option>
                                         <option value="張">張</option>
                                         <option value="才">才</option>
-                                        <option value="箱">箱</option>
                                         <option value="組">組</option>
                                         <option value="支">支</option>
                                     </select>
@@ -432,7 +552,7 @@ export default function App() {
                           <div className="flex-[3]">
                             <label className="text-xs md:text-sm text-gray-400 font-black uppercase tracking-widest mb-2 block">備註說明</label>
                             <input className="w-full h-[60px] bg-gray-50 border-none rounded-xl px-5 text-lg md:text-xl font-medium focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200 font-sans"
-                              placeholder="批號或區域" value={item.note} onChange={e => updateItem(item.id, 'note', e.target.value)} />
+                              placeholder="批號或區域 (自動帶入裝箱數)" value={item.note} onChange={e => updateItem(item.id, 'note', e.target.value)} />
                           </div>
                         </div>
                       </div>
