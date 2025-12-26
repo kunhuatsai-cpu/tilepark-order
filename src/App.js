@@ -138,7 +138,6 @@ export default function App() {
     }
   }, []);
 
-  // 1. 修改：初始狀態加入 unit: '片'
   const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '片', note: '' }]);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -162,7 +161,6 @@ export default function App() {
     orderPhone: '',
   });
 
-  // 2. 修改：新增品項時也加入 unit: '片'
   const addItem = () => {
     setItems([...items, { id: Date.now(), name: '', qty: '', unit: '片', note: '' }]);
     setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
@@ -186,9 +184,16 @@ export default function App() {
       ? `${formData.orderType} (保留庫存)` 
       : formData.orderType;
 
+    // 🌟 關鍵修改：將單位 (unit) 合併到數量 (qty) 中傳送給後端
+    // 這樣即使 Google Script 沒有讀取 unit 欄位，數量欄位也會變成 "10片"
+    const itemsForBackend = items.map(item => ({
+        ...item,
+        qty: `${item.qty}${item.unit || '片'}` 
+    }));
+
     const submitData = { 
         orderId: newOrderId, 
-        items, 
+        items: itemsForBackend, // 傳送包含單位的資料
         ...formData, 
         orderType: finalOrderType, 
         timestamp: new Date().toLocaleString() 
@@ -210,7 +215,6 @@ export default function App() {
     }
   };
 
-  // 3. 修改：複製文字時加入單位顯示
   const copyOrder = () => {
     const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty}${it.unit || '片'} (${it.note || '無備註'})`).join('\n');
     
@@ -412,6 +416,9 @@ export default function App() {
                                         <option value="片">片</option>
                                         <option value="張">張</option>
                                         <option value="才">才</option>
+                                        <option value="箱">箱</option>
+                                        <option value="組">組</option>
+                                        <option value="支">支</option>
                                     </select>
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                                         <Icons.ChevronDown size={16} />
@@ -468,7 +475,7 @@ export default function App() {
 
                   <div className="space-y-2">
                     <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">
-                         {isReservation ? "預計送貨地址 / 案件名稱 (可後補)" : "送貨地址"}
+                          {isReservation ? "預計送貨地址 / 案件名稱 (可後補)" : "送貨地址"}
                     </label>
                     <input 
                         required={!isReservation}
