@@ -418,11 +418,17 @@
             };
 
             try {
+              // 🌟 關鍵修正：將 Content-Type 改為 text/plain，防止瀏覽器發送 Preflight OPTIONS 請求
+              // 這樣 no-cors 模式才能正確傳送資料給 Google Apps Script
               await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST', mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 
+                  'Content-Type': 'text/plain;charset=utf-8' 
+                },
                 body: JSON.stringify(submitData)
               });
+              
               setOrderId(newOrderId);
               setSubmitted(true);
               window.scrollTo(0, 0);
