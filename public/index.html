@@ -261,7 +261,8 @@
                             <span className="font-bold text-[#c25e00] mr-2">{p.id}</span>
                             <span className="text-gray-700 font-medium">{p.name}</span>
                         </div>
-                        {p.packing && <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">{p.packing}片/箱</span>}
+                        {/* 🟢 修正：片/箱 -> 張/箱 */}
+                        {p.packing && <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">{p.packing}張/箱</span>}
                       </div>
                     </li>
                   ))}
@@ -372,11 +373,13 @@
             
             setItems(items.map(item => {
               if (item.id === id) {
+                // 🟢 修正：強制轉換邏輯
+                // 如果後端回傳 '片' (舊資料) 或是沒有單位，一律強制轉為 '張'
+                const targetUnit = (product.unit === '片' || !product.unit) ? '張' : product.unit;
                 return { 
                   ...item, 
                   name: displayName,
-                  // 🟢 若產品無預設單位，則預設為 '張'
-                  unit: product.unit || '張',
+                  unit: targetUnit,
                 };
               }
               return item;
@@ -700,6 +703,8 @@
                                                 <option value="片">片</option>
                                                 <option value="才">才</option>
                                                 <option value="支">支</option>
+                                                {/* 🟢 新增：箱選項 */}
+                                                <option value="箱">箱</option>
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                                                 <Icons.ChevronDown size={16} />
