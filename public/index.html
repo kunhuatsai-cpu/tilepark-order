@@ -373,9 +373,11 @@
             const newOrderId = `TILE-${new Date().toISOString().slice(5,10).replace('-','')}${Math.floor(1000 + Math.random() * 9000)}`;
             const finalOrderType = isReservation ? `${formData.orderType} (保留庫存)` : formData.orderType;
 
+            // 🌟 關鍵修正：不再將 unit 合併到 qty 裡
             const itemsForBackend = items.map(item => ({
                 ...item,
-                qty: `${item.qty}${item.unit || '片'}` 
+                qty: item.qty, // 保持純數字
+                unit: item.unit || '片' // 確保有單位
             }));
 
             const submitData = { 
