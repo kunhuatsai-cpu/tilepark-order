@@ -410,6 +410,7 @@
             }));
 
             const submitData = { 
+                action: 'create', // 🟢 新增：告訴後端這是建立訂單
                 orderId: newOrderId, 
                 items: itemsForBackend, 
                 ...formData, 
