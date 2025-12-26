@@ -120,6 +120,9 @@ export default function App() {
   const [styleLoaded, setStyleLoaded] = useState(false);
 
   useEffect(() => {
+    // 設定網頁標題
+    document.title = "Tile Park 訂貨系統";
+
     let meta = document.querySelector('meta[name="viewport"]');
     if (!meta) {
       meta = document.createElement('meta');
