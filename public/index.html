@@ -177,7 +177,7 @@
           </div>
         );
 
-        // --- 🌟 修正版：產品搜尋建議組件 ---
+        // --- 🌟 修正版：產品搜尋建議組件 (支援手機觸控) ---
         const ProductAutocomplete = ({ value, onChange, onSelect, productList, isLoading }) => {
           const [suggestions, setSuggestions] = useState([]);
           const [showSuggestions, setShowSuggestions] = useState(false);
@@ -189,8 +189,13 @@
                 setShowSuggestions(false);
               }
             }
+            // 📱 增加 touchstart 監聽，解決手機點擊外部不關閉選單的問題
             document.addEventListener("mousedown", handleClickOutside);
-            return () => document.removeEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+            return () => {
+                document.removeEventListener("mousedown", handleClickOutside);
+                document.removeEventListener("touchstart", handleClickOutside);
+            };
           }, []);
 
           // 🌟 自動更新建議列表：當 productList 更新且有輸入值時，重新篩選
@@ -246,6 +251,8 @@
                     <li 
                       key={idx} 
                       onClick={() => handleSelect(p)}
+                      // 📱 增加 onTouchEnd 確保手機觸控能正確觸發選取
+                      onTouchEnd={(e) => { e.preventDefault(); handleSelect(p); }}
                       className="px-5 py-3 hover:bg-orange-50 cursor-pointer transition-colors border-b border-gray-50 last:border-none group"
                     >
                       <div className="flex justify-between items-center">
