@@ -331,7 +331,7 @@
           };
 
           const handleProductSelect = (id, product) => {
-            const displayName = `${product.id} ${product.name}`;
+            const displayName = product.name; // 🌟 修改：只顯示產品名稱，不含貨號
             const packingNote = product.packing ? `一箱${product.packing}片` : '';
             
             setItems(items.map(item => {
