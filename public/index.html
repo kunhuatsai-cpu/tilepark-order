@@ -278,7 +278,8 @@
 
           const [rememberMe, setRememberMe] = useState(true); 
 
-          const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '片', note: '' }]); 
+          // 🟢 預設單位改為 '張'
+          const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '張', note: '' }]); 
           const [loading, setLoading] = useState(false);
           const [submitted, setSubmitted] = useState(false);
           const [orderId, setOrderId] = useState('');
@@ -353,8 +354,9 @@
 
           }, [fetchProducts]);
 
+          // 🟢 新增品項時，預設單位為 '張'
           const addItem = () => {
-            setItems([...items, { id: Date.now(), name: '', qty: '', unit: '片', note: '' }]);
+            setItems([...items, { id: Date.now(), name: '', qty: '', unit: '張', note: '' }]);
             setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
           };
 
@@ -372,7 +374,8 @@
                 return { 
                   ...item, 
                   name: displayName,
-                  unit: product.unit || '片',
+                  // 🟢 若產品無預設單位，則預設為 '張'
+                  unit: product.unit || '張',
                 };
               }
               return item;
@@ -409,7 +412,7 @@
             const itemsForBackend = items.map(item => ({
                 ...item,
                 qty: item.qty, // 保持純數字
-                unit: item.unit || '片' // 確保有單位
+                unit: item.unit || '張' // 確保有單位，預設為張
             }));
 
             const submitData = { 
@@ -447,7 +450,8 @@
           };
 
           const copyOrder = () => {
-            const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty}${it.unit || '片'} (${it.note || '無備註'})`).join('\n');
+            // 🟢 複製文字預設也改為 '張' (如果 unit 是空的)
+            const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty}${it.unit || '張'} (${it.note || '無備註'})`).join('\n');
             const title = isReservation ? '【Tile Park 保留單通知】' : '【Tile Park 訂單通知】';
             const typeLabel = isReservation ? '需求性質：保留庫存' : '需求性質：正式出貨';
             // 🟢 修正：送貨日期 -> 出貨日期
@@ -684,11 +688,11 @@
                                         <div className="flex-1 relative h-full min-w-[90px]">
                                             <select 
                                                 className="w-full h-full bg-gray-100 border-none rounded-xl pl-4 pr-8 text-lg font-bold text-gray-700 focus:ring-2 focus:ring-[#c25e00]/20 outline-none appearance-none font-sans cursor-pointer hover:bg-gray-200 transition-colors text-center"
-                                                value={item.unit || '片'}
+                                                value={item.unit || '張'}
                                                 onChange={e => updateItem(item.id, 'unit', e.target.value)}
                                             >
-                                                <option value="片">片</option>
                                                 <option value="張">張</option>
+                                                <option value="片">片</option>
                                                 <option value="才">才</option>
                                                 <option value="支">支</option>
                                             </select>
