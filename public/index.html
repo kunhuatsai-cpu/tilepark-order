@@ -332,16 +332,16 @@
 
           const handleProductSelect = (id, product) => {
             const displayName = product.name; // 🌟 只顯示產品名稱
-            const packingNote = product.packing ? `一箱${product.packing}片` : '';
+            // const packingNote = product.packing ? `一箱${product.packing}片` : ''; // 不再自動產生
             
             setItems(items.map(item => {
               if (item.id === id) {
-                const newNote = item.note ? `${item.note}, ${packingNote}` : packingNote;
+                // const newNote = item.note ? `${item.note}, ${packingNote}` : packingNote; // 不再自動填入
                 return { 
                   ...item, 
                   name: displayName,
                   unit: product.unit || '片',
-                  note: newNote
+                  // note: newNote // 保持原樣
                 };
               }
               return item;
@@ -643,7 +643,7 @@
                                   <div className="flex-[3]">
                                     <label className="text-xs md:text-sm text-gray-400 font-black uppercase tracking-widest mb-2 block">備註說明</label>
                                     <input className="w-full h-[60px] bg-gray-50 border-none rounded-xl px-5 text-lg md:text-xl font-medium focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200 font-sans"
-                                      placeholder="批號或區域 (自動帶入裝箱數)" value={item.note} onChange={e => updateItem(item.id, 'note', e.target.value)} />
+                                      placeholder="批號或區域" value={item.note} onChange={e => updateItem(item.id, 'note', e.target.value)} />
                                   </div>
                                 </div>
                               </div>
