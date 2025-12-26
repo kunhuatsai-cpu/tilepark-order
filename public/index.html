@@ -193,19 +193,27 @@
             return () => document.removeEventListener("mousedown", handleClickOutside);
           }, []);
 
+          // 🌟 自動更新建議列表：當 productList 更新且有輸入值時，重新篩選
+          useEffect(() => {
+             if (value && productList.length > 0) {
+                const filtered = productList.filter(p => 
+                  (String(p.id).toLowerCase().includes(value.toLowerCase())) || 
+                  (String(p.name).toLowerCase().includes(value.toLowerCase()))
+                ).slice(0, 10);
+                
+                // 只有當新列表跟舊列表不同，或是列表原本是空的，才更新
+                setSuggestions(filtered);
+                // 如果有找到結果，且使用者正在輸入，確保選單是打開的
+                if(filtered.length > 0) setShowSuggestions(true);
+             }
+          }, [productList, value]); 
+
           const handleInputChange = (e) => {
             const inputVal = e.target.value;
             onChange(inputVal);
 
-            if (inputVal.length > 0 && productList.length > 0) {
-              const filtered = productList.filter(p => 
-                (String(p.id).toLowerCase().includes(inputVal.toLowerCase())) || 
-                (String(p.name).toLowerCase().includes(inputVal.toLowerCase()))
-              ).slice(0, 10);
-              
-              setSuggestions(filtered);
-              setShowSuggestions(true);
-            } else {
+            // 這裡的邏輯會被上面的 useEffect 接手處理
+            if (!inputVal) {
               setShowSuggestions(false);
             }
           };
@@ -288,7 +296,8 @@
           const fetchProducts = useCallback((showToast = false) => {
             setIsProductLoading(true);
             // 🌟 加上時間戳記 _t 防止瀏覽器快取，確保抓到最新資料
-            fetch(`${GOOGLE_SCRIPT_URL}?action=getProducts&_t=${new Date().getTime()}`)
+            // 並加上 { cache: 'no-store' } 確保瀏覽器不緩存
+            fetch(`${GOOGLE_SCRIPT_URL}?action=getProducts&_t=${new Date().getTime()}`, { cache: "no-store" })
               .then(res => res.json())
               .then(data => {
                 if(Array.isArray(data)){
