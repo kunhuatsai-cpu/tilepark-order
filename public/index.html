@@ -163,14 +163,13 @@
           </div>
         );
 
-        // --- 🌟 新增：產品搜尋建議組件 ---
-        const ProductAutocomplete = ({ value, onChange, onSelect, productList }) => {
+        // --- 🌟 修正版：產品搜尋建議組件 ---
+        const ProductAutocomplete = ({ value, onChange, onSelect, productList, isLoading }) => {
           const [suggestions, setSuggestions] = useState([]);
           const [showSuggestions, setShowSuggestions] = useState(false);
           const wrapperRef = useRef(null);
 
           useEffect(() => {
-            // 點擊外部關閉建議選單
             function handleClickOutside(event) {
               if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
                 setShowSuggestions(false);
@@ -185,10 +184,13 @@
             onChange(inputVal);
 
             if (inputVal.length > 0 && productList.length > 0) {
+              // 🔥 關鍵修正：強制將 p.id 和 p.name 轉為字串 (String) 再比對
+              // 避免因為貨號是純數字導致 toLowerCase() 報錯
               const filtered = productList.filter(p => 
-                (p.id && p.id.toLowerCase().includes(inputVal.toLowerCase())) || 
-                (p.name && p.name.toLowerCase().includes(inputVal.toLowerCase()))
-              ).slice(0, 10); // 只顯示前10筆
+                (String(p.id).toLowerCase().includes(inputVal.toLowerCase())) || 
+                (String(p.name).toLowerCase().includes(inputVal.toLowerCase()))
+              ).slice(0, 10);
+              
               setSuggestions(filtered);
               setShowSuggestions(true);
             } else {
@@ -206,14 +208,15 @@
               <div className="relative">
                 <input 
                   required 
-                  className="w-full bg-gray-50 border-none rounded-xl px-5 py-4 pl-12 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-200 font-sans"
-                  placeholder="輸入貨號或品名搜尋" 
+                  className={`w-full bg-gray-50 border-none rounded-xl px-5 py-4 pl-12 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-300 font-sans ${isLoading ? 'opacity-70 cursor-wait' : ''}`}
+                  placeholder={isLoading ? "🔍 正在連線產品資料庫..." : "輸入貨號或品名搜尋"} 
                   value={value} 
                   onChange={handleInputChange} 
                   onFocus={() => value && suggestions.length > 0 && setShowSuggestions(true)}
+                  disabled={isLoading}
                 />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none">
-                    <Icons.Search size={20} />
+                <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none ${isLoading ? 'animate-spin text-[#c25e00]' : 'text-gray-300'}`}>
+                    {isLoading ? <Icons.Search size={20} /> : <Icons.Search size={20} />}
                 </div>
               </div>
               
@@ -242,17 +245,15 @@
 
         function App() {
           const [styleLoaded, setStyleLoaded] = useState(false);
-          
-          // 🌟 新增：產品清單 State
           const [productList, setProductList] = useState([]);
           const [isProductLoading, setIsProductLoading] = useState(true);
+          const [modalData, setModalData] = useState(null); // 用於顯示全域提示
 
           useEffect(() => {
-            // 檢查 Tailwind 是否載入
             if (window.tailwind) {
                 setStyleLoaded(true);
             } else {
-                setTimeout(() => setStyleLoaded(true), 500); // Fallback
+                setTimeout(() => setStyleLoaded(true), 500);
             }
 
             // 🌟 載入時抓取產品清單
@@ -261,22 +262,27 @@
               .then(data => {
                 console.log("Products Loaded:", data);
                 if(Array.isArray(data)){
+                    if(data.length === 0) {
+                        setModalData({ msg: "⚠️ 連線成功但找不到產品資料。\n請確認 Google 試算表是否有「Products」分頁。", type: 'error' });
+                    }
                     setProductList(data);
+                } else {
+                    setModalData({ msg: "⚠️ 產品資料格式錯誤，請聯繫管理員。", type: 'error' });
                 }
                 setIsProductLoading(false);
               })
               .catch(err => {
                 console.error("Failed to load products:", err);
+                setModalData({ msg: "⚠️ 無法連線到資料庫，請檢查網路或稍後再試。", type: 'error' });
                 setIsProductLoading(false);
               });
 
           }, []);
 
-          const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '箱', note: '' }]); // 預設單位改為'箱'
+          const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '箱', note: '' }]); 
           const [loading, setLoading] = useState(false);
           const [submitted, setSubmitted] = useState(false);
           const [orderId, setOrderId] = useState('');
-          const [modalData, setModalData] = useState(null);
           const [showConfirm, setShowConfirm] = useState(false);
           
           const [isReservation, setIsReservation] = useState(false);
@@ -306,22 +312,17 @@
             setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
           };
 
-          // 🌟 新增：處理產品選擇
           const handleProductSelect = (id, product) => {
             const displayName = `${product.id} ${product.name}`;
-            
-            // 自動帶入裝箱數到備註
             const packingNote = product.packing ? `一箱${product.packing}片` : '';
             
             setItems(items.map(item => {
               if (item.id === id) {
-                // 如果原本備註有內容，保留並加上新備註
                 const newNote = item.note ? `${item.note}, ${packingNote}` : packingNote;
-                
                 return { 
                   ...item, 
                   name: displayName,
-                  unit: product.unit || '箱', // 自動帶入單位，若無則預設箱
+                  unit: product.unit || '箱',
                   note: newNote
                 };
               }
@@ -339,12 +340,8 @@
             setLoading(true);
             
             const newOrderId = `TILE-${new Date().toISOString().slice(5,10).replace('-','')}${Math.floor(1000 + Math.random() * 9000)}`;
-            
-            const finalOrderType = isReservation 
-              ? `${formData.orderType} (保留庫存)` 
-              : formData.orderType;
+            const finalOrderType = isReservation ? `${formData.orderType} (保留庫存)` : formData.orderType;
 
-            // 將單位合併到數量
             const itemsForBackend = items.map(item => ({
                 ...item,
                 qty: `${item.qty}${item.unit || '箱'}` 
@@ -376,10 +373,8 @@
 
           const copyOrder = () => {
             const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name} x ${it.qty}${it.unit || '箱'} (${it.note || '無備註'})`).join('\n');
-            
             const title = isReservation ? '【Tile Park 保留單通知】' : '【Tile Park 訂單通知】';
             const typeLabel = isReservation ? '需求性質：保留庫存' : '需求性質：正式出貨';
-            
             const dateLabel = isReservation ? '預計出貨' : '送貨日期';
             const dateInfo = `${dateLabel}：${formData.deliveryDate}`;
 
@@ -561,6 +556,7 @@
                                     onChange={(val) => updateItem(item.id, 'name', val)}
                                     onSelect={(product) => handleProductSelect(item.id, product)}
                                     productList={productList}
+                                    isLoading={isProductLoading}
                                   />
                                 </div>
                                 <div className="flex flex-col md:flex-row gap-5">
@@ -672,30 +668,6 @@
                                 value={formData.deliveryPhone} onChange={e => setFormData({...formData, deliveryPhone: e.target.value})} 
                               />
                             </div>
-                          </div>
-                        </div>
-                      </section>
-
-                      {/* 3. 訂購客戶資料 */}
-                      <section className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                        <SectionHeader icon={Icons.User} title="訂購客戶資料" />
-                        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-8">
-                          <div className="space-y-2">
-                            <label className="text-xs md:text-sm text-gray-400 font-black uppercase mb-1 block">公司寶號 (抬頭)</label>
-                            <input required placeholder="請輸入完整公司名稱" className="w-full bg-gray-50 border-none rounded-xl p-5 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 font-sans"
-                              value={formData.orderCompany} onChange={e => setFormData({...formData, orderCompany: e.target.value})} />
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div className="space-y-2">
-                                <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">訂購經辦人</label>
-                                <input required placeholder="經辦姓名" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
-                                value={formData.orderContact} onChange={e => setFormData({...formData, orderContact: e.target.value})} />
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-xs md:text-sm text-gray-500 font-black mb-1 block">經辦聯絡電話</label>
-                                <input required placeholder="電話" type="tel" className="w-full bg-gray-50 border-none rounded-xl p-4 text-base md:text-lg font-bold font-sans"
-                                value={formData.orderPhone} onChange={e => setFormData({...formData, orderPhone: e.target.value})} />
-                              </div>
                           </div>
                         </div>
                       </section>
