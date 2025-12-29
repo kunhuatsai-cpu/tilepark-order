@@ -505,16 +505,32 @@
               {modalData && <Modal message={modalData.msg} type={modalData.type} onClose={() => setModalData(null)} />}
               {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} onConfirm={handleFinalSubmit} isReservation={isReservation} />}
               <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden relative">
-                <aside className="w-full md:w-[32%] lg:w-[28%] bg-white border-r border-gray-100 flex flex-col items-center p-8 pt-12 shrink-0 border-b md:border-b-0">
-                    <Logo />
-                    <div className="hidden md:block text-center mt-12">
-                      <h2 className="text-xl font-black tracking-widest text-gray-900">薩鉅國際有限公司</h2>
-                      <div className="text-sm text-gray-400 mt-6 space-y-4">
-                         <p className="flex items-center justify-center gap-2"><Icons.Pin size={14} className="text-[#c25e00]"/> 新北市板橋區金門街</p>
-                         <p className="flex items-center justify-center gap-2"><Icons.Phone size={14}/> 02-86860028</p>
-                      </div>
+                
+                {/* --- 左側品牌與公司資訊區 --- */}
+                <aside className="w-full md:w-[32%] lg:w-[28%] bg-white border-r border-gray-100 flex flex-col items-center justify-start md:justify-between p-8 pt-12 pb-12 shrink-0 border-b md:border-b-0">
+                    <div className="flex flex-col items-center w-full">
+                        <Logo />
+                    </div>
+                    
+                    <div className="hidden md:flex flex-col items-center text-center w-full px-2">
+                        <div className="w-16 h-1.5 bg-[#c25e00] mb-8 rounded-full"></div>
+                        <h2 className="text-xl font-black tracking-widest text-gray-900 leading-tight">薩鉅國際有限公司</h2>
+                        
+                        <div className="text-xs md:text-sm text-gray-400 mt-6 space-y-4 font-medium">
+                            <p className="flex items-center justify-center gap-2">
+                                <Icons.Pin size={14} className="text-[#c25e00] shrink-0"/> 新北市板橋區金門街215巷78-5號
+                            </p>
+                            <p className="flex items-center justify-center gap-2">
+                                <Icons.Phone size={14} className="shrink-0"/> 02-86860028
+                            </p>
+                            <a href="https://line.me/ti/p/@tileparktw" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 hover:text-[#06C755] transition-colors font-bold text-gray-600">
+                                <Icons.Line size={14} className="shrink-0"/> LINE: @tileparktw
+                            </a>
+                        </div>
+                        <div className="pt-8 text-[10px] text-gray-300 font-serif tracking-[0.4em] uppercase">Authentic Japanese Tiles</div>
                     </div>
                 </aside>
+
                 <main className="flex-1 bg-gray-50 md:overflow-y-auto custom-scrollbar relative">
                   <form onSubmit={handleSubmit} className="p-4 md:p-10 lg:p-16 max-w-4xl mx-auto pb-32">
                     <div className="grid grid-cols-1 gap-4 mb-12">
@@ -528,6 +544,7 @@
                             <button type="button" onClick={() => setIsReservation(true)} className={`flex-1 py-3 text-sm md:text-lg font-black rounded-xl transition-all flex items-center justify-center gap-2 ${isReservation ? 'bg-white text-blue-600 shadow-md' : 'text-gray-400'}`}><Icons.Archive size={18} /> 僅保留庫存</button>
                         </div>
                     </div>
+
                     <div className="space-y-16">
                       <section className="animate-fade-in-up">
                         <SectionHeader icon={Icons.User} title="訂購客戶資料" />
@@ -542,6 +559,7 @@
                           </div>
                         </div>
                       </section>
+
                       <section className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                         <SectionHeader icon={isReservation ? Icons.Archive : Icons.Bag} title={isReservation ? "保留品項清單" : "訂購內容清單"} rightContent={
                             <div className="flex items-center gap-2">
@@ -578,6 +596,7 @@
                           <button type="button" onClick={addItem} className="w-full py-5 border-2 border-dashed border-gray-200 text-gray-400 rounded-[2rem] font-black flex items-center justify-center gap-3">新增品項</button>
                         </div>
                       </section>
+
                       <section className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                         <SectionHeader icon={Icons.Truck} title={isReservation ? "預計需求資訊" : "出貨與現場資訊"} />
                         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm space-y-8">
@@ -592,6 +611,7 @@
                           </div>
                         </div>
                       </section>
+
                       <div className="flex items-center justify-center mb-6">
                         <label className="flex items-center cursor-pointer group">
                             <input type="checkbox" className="hidden" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}/>
@@ -599,6 +619,31 @@
                             <span className={`text-sm font-bold ${rememberMe ? 'text-[#c25e00]' : 'text-gray-400'}`}>記住訂購人資料，下次自動帶入</span>
                         </label>
                       </div>
+
+                      {/* --- 頁尾資訊區 (手機版) --- */}
+                      <div className="mt-8 mb-24 md:hidden space-y-5 text-center border-t border-gray-200 pt-10 px-4">
+                        <div className="space-y-4">
+                          <div className="w-10 h-1 bg-[#c25e00] mx-auto mb-4 rounded-full"></div>
+                          <h4 className="font-black text-gray-900 tracking-[0.1em] text-lg">薩鉅國際有限公司</h4>
+                          <div className="text-[11px] text-gray-400 space-y-3 flex flex-col items-center font-medium">
+                            <div className="flex items-center gap-2">
+                              <Icons.Pin size={12} className="text-[#c25e00]" /> 新北市板橋區金門街215巷78-5號
+                            </div>
+                            <div className="flex gap-6 justify-center">
+                              <a href="tel:0286860028" className="flex items-center gap-2 font-bold text-gray-500">
+                                <Icons.Phone size={12} /> 02-86860028
+                              </a>
+                            </div>
+                            <a href="https://line.me/ti/p/@tileparktw" target="_blank" rel="noreferrer" className="flex items-center gap-2 font-bold text-gray-500">
+                                <Icons.Line size={12} /> LINE: @tileparktw
+                            </a>
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-gray-300 font-serif tracking-[1em] uppercase py-4">
+                          TILE PARK TAIWAN
+                        </div>
+                      </div>
+
                     </div>
                     <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-xl border-t md:static md:bg-transparent md:border-none md:p-0 md:mt-16 z-50">
                       <button type="submit" disabled={loading} className={`w-full text-white py-6 rounded-3xl font-black tracking-[0.4em] text-xl shadow-xl flex items-center justify-center gap-4 ${isReservation ? 'bg-blue-600' : 'bg-[#222]'}`}>
