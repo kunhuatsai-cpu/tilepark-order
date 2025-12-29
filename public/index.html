@@ -271,7 +271,7 @@
                             <span className="font-black text-[#c25e00] text-sm mb-1">{p.id}</span>
                             <span className="text-gray-800 font-bold text-base">{p.name}</span>
                         </div>
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-col items-end gap-1 text-right min-w-[80px]">
                             {p.packing && <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full whitespace-nowrap">📦 {p.packing}</span>}
                             {p.spec && <span className="text-[10px] text-gray-400 font-mono whitespace-nowrap">{p.spec}</span>}
                         </div>
@@ -312,7 +312,7 @@
             orderPhone: '',
           });
 
-          // 🌟 解析 CSV 資料並「去重」的函式
+          // 🌟 核心修正：更強力的去重邏輯，確保每個「貨號」只出現一次
           const fetchProducts = useCallback(async (showToast = false) => {
             setIsProductLoading(true);
             setDbStatus('loading');
@@ -338,19 +338,21 @@
                                     return;
                                 }
 
-                                // 🛠️ 去重邏輯：使用 Map 以 貨號+品名 作為 Key
+                                // 🛠️ 嚴格去重：使用 Map 以「貨號」作為唯一 Key
                                 const uniqueProductsMap = new Map();
 
                                 results.data.forEach(row => {
-                                    const id = row['貨號']?.trim();
+                                    // 移除貨號中可能存在的空格，並轉大寫確保一致性
+                                    const rawId = row['貨號']?.toString() || '';
+                                    const idKey = rawId.trim().toUpperCase();
+                                    
                                     const name = row['產品名稱']?.trim();
                                     
-                                    if (id && name) {
-                                        const uniqueKey = `${id}-${name}`;
-                                        // 如果還沒加入過，則加入 Map (保留第一筆看到的資料)
-                                        if (!uniqueProductsMap.has(uniqueKey)) {
-                                            uniqueProductsMap.set(uniqueKey, {
-                                                id: id,
+                                    if (idKey && name) {
+                                        // 如果這個貨號還沒被加入過，則加入 Map
+                                        if (!uniqueProductsMap.has(idKey)) {
+                                            uniqueProductsMap.set(idKey, {
+                                                id: rawId.trim(), // 保留原本的字串樣式
                                                 name: name,
                                                 unit: row['庫存單位']?.trim() || '張',
                                                 spec: row['規格名稱']?.trim() || '',
@@ -362,7 +364,6 @@
                                     }
                                 });
 
-                                // 將 Map 轉換回 Array
                                 const finalData = Array.from(uniqueProductsMap.values());
 
                                 if (finalData.length > 0) {
@@ -504,7 +505,7 @@
               {modalData && <Modal message={modalData.msg} type={modalData.type} onClose={() => setModalData(null)} />}
               {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} onConfirm={handleFinalSubmit} isReservation={isReservation} />}
               <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden relative">
-                <aside className="w-full md:w-[32%] lg:w-[28%] bg-white border-r border-gray-100 flex flex-col items-center p-8 pt-12 shrink-0">
+                <aside className="w-full md:w-[32%] lg:w-[28%] bg-white border-r border-gray-100 flex flex-col items-center p-8 pt-12 shrink-0 border-b md:border-b-0">
                     <Logo />
                     <div className="hidden md:block text-center mt-12">
                       <h2 className="text-xl font-black tracking-widest text-gray-900">薩鉅國際有限公司</h2>
@@ -561,14 +562,14 @@
                                         {item.usage && <span>用量(數量/坪): <b>{item.usage}</b></span>}
                                     </div>
                                 )}
-                                <div className="flex gap-4">
+                                <div className="flex flex-col sm:flex-row gap-4">
                                   <div className="flex-[2] flex gap-2 h-[60px]">
                                     <input required className="flex-1 bg-gray-50 rounded-xl px-5 text-lg font-bold text-center" placeholder="0" value={item.qty} onChange={e => updateItem(item.id, 'qty', e.target.value)} />
                                     <select className="flex-1 bg-gray-100 rounded-xl px-4 text-lg font-bold" value={item.unit} onChange={e => updateItem(item.id, 'unit', e.target.value)}>
                                         <option value="張">張</option><option value="片">片</option><option value="才">才</option><option value="支">支</option><option value="箱">箱</option><option value="組">組</option><option value="式">式</option>
                                     </select>
                                   </div>
-                                  <input className="flex-[3] bg-gray-50 rounded-xl px-5 text-lg" placeholder="備註" value={item.note} onChange={e => updateItem(item.id, 'note', e.target.value)} />
+                                  <input className="flex-[3] bg-gray-50 rounded-xl px-5 text-lg h-[60px]" placeholder="備註" value={item.note} onChange={e => updateItem(item.id, 'note', e.target.value)} />
                                 </div>
                               </div>
                               {items.length > 1 && <button type="button" onClick={() => removeItem(item.id)} className="absolute -left-3 -top-3 bg-white text-red-400 shadow-lg rounded-full p-2.5 border border-red-50"><Icons.Trash size={18} /></button>}
