@@ -62,7 +62,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
-        // 🛑 Web App 網址
+        // 🟢 已填入您指定的 Google Script 網址
         const GOOGLE_SCRIPT_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbyKP7YGKdSFYYJMEI2tH7t3u3lILjfc3XGK-xlFx0o3se2_QnnvP-vNtEGcgZXt1Xx7/exec";
 
         // --- 🛠️ 內建 SVG 圖示 ---
@@ -134,7 +134,7 @@
           </div>
         );
 
-        // 🌟 修正：產品搜尋組件
+        // 🌟 產品搜尋組件 (顯示規格、包裝、用量)
         const ProductAutocomplete = ({ value, onChange, onSelect, productList, isLoading }) => {
           const [suggestions, setSuggestions] = useState([]);
           const [showSuggestions, setShowSuggestions] = useState(false);
@@ -192,7 +192,7 @@
                             <span className="text-gray-800 font-bold text-base">{p.name}</span>
                         </div>
                         <div className="flex flex-col items-end gap-1 text-right min-w-[80px]">
-                            {/* 🌟 搜尋建議清單的顯示 */}
+                            {/* 🌟 修改處：顯示 規格(D)、包裝(E)、用量(F) */}
                             {p.spec && <span className="text-xs text-gray-600 font-bold bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap">{p.spec}</span>}
                             {p.packing && <span className="text-[10px] text-gray-500 whitespace-nowrap">包裝數: {p.packing}</span>}
                             {p.usage && <span className="text-[10px] text-gray-500 whitespace-nowrap">用量/坪: {p.usage}</span>}
@@ -238,10 +238,13 @@
                 const response = await fetch(GOOGLE_SCRIPT_SUBMIT_URL);
                 const data = await response.json();
 
-                if (data && Array.isArray(data) && data.length > 0) {
+                // 🌟 關鍵修正：相容 {inventory: [...], orders: [...]} 或 [...]
+                const inventoryData = (data && data.inventory) ? data.inventory : data;
+
+                if (inventoryData && Array.isArray(inventoryData) && inventoryData.length > 0) {
                     // 🔄 去除重複邏輯：使用 Map 以 item.id 作為唯一的 Key
                     const uniqueMap = new Map();
-                    data.forEach(item => {
+                    inventoryData.forEach(item => {
                         // 確保 ID 存在才處理
                         if (item.id && !uniqueMap.has(item.id)) {
                             uniqueMap.set(item.id, item);
