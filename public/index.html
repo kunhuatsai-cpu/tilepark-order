@@ -62,7 +62,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
-        // 🛑 請確認這裡填入的是最新部署的 Web App 網址 (以 /exec 結尾)
+        // 🛑 Web App 網址
         const GOOGLE_SCRIPT_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbyKP7YGKdSFYYJMEI2tH7t3u3lILjfc3XGK-xlFx0o3se2_QnnvP-vNtEGcgZXt1Xx7/exec";
 
         // --- 🛠️ 內建 SVG 圖示 ---
@@ -134,6 +134,7 @@
           </div>
         );
 
+        // 🌟 修正：產品搜尋組件
         const ProductAutocomplete = ({ value, onChange, onSelect, productList, isLoading }) => {
           const [suggestions, setSuggestions] = useState([]);
           const [showSuggestions, setShowSuggestions] = useState(false);
@@ -150,10 +151,12 @@
 
           useEffect(() => {
              if (value && productList.length > 0) {
-                const filtered = productList.filter(p => 
-                  (String(p.id).toLowerCase().includes(value.toLowerCase())) || 
-                  (String(p.name).toLowerCase().includes(value.toLowerCase()))
-                ).slice(0, 10);
+                const lowerValue = value.toLowerCase();
+                const filtered = productList.filter(p => {
+                    const searchStr = `${p.id} ${p.name}`.toLowerCase();
+                    return searchStr.includes(lowerValue);
+                }).slice(0, 10);
+                
                 setSuggestions(filtered);
                 if(filtered.length > 0) setShowSuggestions(true);
              }
@@ -189,8 +192,10 @@
                             <span className="text-gray-800 font-bold text-base">{p.name}</span>
                         </div>
                         <div className="flex flex-col items-end gap-1 text-right min-w-[80px]">
-                            {p.qty && <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${parseInt(p.qty) > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>庫存: {p.qty}</span>}
-                            {p.spec && <span className="text-[10px] text-gray-400 font-mono whitespace-nowrap">{p.spec}</span>}
+                            {/* 🌟 搜尋建議清單的顯示 */}
+                            {p.spec && <span className="text-xs text-gray-600 font-bold bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap">{p.spec}</span>}
+                            {p.packing && <span className="text-[10px] text-gray-500 whitespace-nowrap">包裝數: {p.packing}</span>}
+                            {p.usage && <span className="text-[10px] text-gray-500 whitespace-nowrap">用量/坪: {p.usage}</span>}
                         </div>
                       </div>
                     </li>
@@ -223,7 +228,7 @@
             orderCompany: '', orderContact: '', orderPhone: '',
           });
 
-          // 🌟 修正：改用 Google Apps Script (doGet) 獲取資料，不再使用 CSV
+          // 🌟 修正：獲取資料後，直接在前端進行去重 (以 ID 為準)
           const fetchProducts = useCallback(async (showToast = false) => {
             setIsProductLoading(true);
             setDbStatus('loading');
@@ -234,9 +239,19 @@
                 const data = await response.json();
 
                 if (data && Array.isArray(data) && data.length > 0) {
-                    setProductList(data);
+                    // 🔄 去除重複邏輯：使用 Map 以 item.id 作為唯一的 Key
+                    const uniqueMap = new Map();
+                    data.forEach(item => {
+                        // 確保 ID 存在才處理
+                        if (item.id && !uniqueMap.has(item.id)) {
+                            uniqueMap.set(item.id, item);
+                        }
+                    });
+                    const uniqueData = Array.from(uniqueMap.values());
+
+                    setProductList(uniqueData);
                     setDbStatus('success');
-                    if(showToast) setModalData({ msg: `✅ 成功載入 ${data.length} 項產品 (A06REPORT)！`, type: 'success' });
+                    if(showToast) setModalData({ msg: `✅ 成功載入 ${uniqueData.length} 項產品 (已去重)！`, type: 'success' });
                 } else if (data.result === 'error') {
                     throw new Error(data.message);
                 } else {
@@ -275,7 +290,14 @@
           const handleProductSelect = (id, product) => {
             setItems(items.map(item => {
               if (item.id === id) {
-                return { ...item, name: product.name, unit: product.unit || '張', spec: product.spec, packing: product.packing };
+                return { 
+                    ...item, 
+                    name: product.name, 
+                    unit: product.unit || '張', // 自動更新單位
+                    spec: product.spec, 
+                    packing: product.packing,
+                    usage: product.usage // 帶入用量
+                };
               }
               return item;
             }));
@@ -357,18 +379,8 @@
 
                 <main className="flex-1 bg-gray-50 md:overflow-y-auto custom-scrollbar relative">
                   <form onSubmit={handleSubmit} className="p-4 md:p-10 lg:p-16 max-w-4xl mx-auto pb-32">
-                    <div className="grid grid-cols-1 gap-4 mb-12">
-                        <div className="bg-gray-200/50 p-1.5 rounded-2xl flex shadow-inner">
-                        {['新案場', '案場追加訂單'].map((type) => (
-                            <button key={type} type="button" onClick={() => setFormData({...formData, orderType: type})} className={`flex-1 py-3 text-sm md:text-lg font-black rounded-xl transition-all ${formData.orderType === type ? 'bg-white text-[#c25e00] shadow-md' : 'text-gray-400'}`}>{type}</button>
-                        ))}
-                        </div>
-                        <div className={`p-1.5 rounded-2xl flex shadow-inner transition-colors duration-300 ${isReservation ? 'bg-blue-100/50' : 'bg-green-100/50'}`}>
-                            <button type="button" onClick={() => setIsReservation(false)} className={`flex-1 py-3 text-sm md:text-lg font-black rounded-xl transition-all flex items-center justify-center gap-2 ${!isReservation ? 'bg-white text-[#c25e00] shadow-md' : 'text-gray-400'}`}><Icons.Truck size={18} /> 正式出貨</button>
-                            <button type="button" onClick={() => setIsReservation(true)} className={`flex-1 py-3 text-sm md:text-lg font-black rounded-xl transition-all flex items-center justify-center gap-2 ${isReservation ? 'bg-white text-blue-600 shadow-md' : 'text-gray-400'}`}><Icons.Archive size={18} /> 僅保留庫存</button>
-                        </div>
-                    </div>
-
+                    
+                    {/* 🌟 介面調整：將「訂購客戶資料」移到最上方 */}
                     <div className="space-y-16">
                       <section className="animate-fade-in-up">
                         <div className="flex items-center justify-between mb-5 mt-2 px-1"><div className="flex items-center gap-2"><div className="p-2.5 bg-orange-100 rounded-xl text-[#c25e00]"><Icons.User size={20} /></div><h3 className="font-black text-gray-800 text-base md:text-lg tracking-widest">訂購客戶資料</h3></div></div>
@@ -383,6 +395,19 @@
                           </div>
                         </div>
                       </section>
+
+                      {/* 🌟 訂單類型按鈕 */}
+                      <div className="grid grid-cols-1 gap-4">
+                          <div className="bg-gray-200/50 p-1.5 rounded-2xl flex shadow-inner">
+                          {['新案場', '案場追加訂單'].map((type) => (
+                              <button key={type} type="button" onClick={() => setFormData({...formData, orderType: type})} className={`flex-1 py-3 text-sm md:text-lg font-black rounded-xl transition-all ${formData.orderType === type ? 'bg-white text-[#c25e00] shadow-md' : 'text-gray-400'}`}>{type}</button>
+                          ))}
+                          </div>
+                          <div className={`p-1.5 rounded-2xl flex shadow-inner transition-colors duration-300 ${isReservation ? 'bg-blue-100/50' : 'bg-green-100/50'}`}>
+                              <button type="button" onClick={() => setIsReservation(false)} className={`flex-1 py-3 text-sm md:text-lg font-black rounded-xl transition-all flex items-center justify-center gap-2 ${!isReservation ? 'bg-white text-[#c25e00] shadow-md' : 'text-gray-400'}`}><Icons.Truck size={18} /> 正式出貨</button>
+                              <button type="button" onClick={() => setIsReservation(true)} className={`flex-1 py-3 text-sm md:text-lg font-black rounded-xl transition-all flex items-center justify-center gap-2 ${isReservation ? 'bg-white text-blue-600 shadow-md' : 'text-gray-400'}`}><Icons.Archive size={18} /> 僅保留庫存</button>
+                          </div>
+                      </div>
 
                       <section className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                         <div className="flex items-center justify-between mb-5 mt-2 px-1">
@@ -399,9 +424,11 @@
                               <div className="space-y-6">
                                 <ProductAutocomplete value={item.name} onChange={(val) => updateItem(item.id, 'name', val)} onSelect={(product) => handleProductSelect(item.id, product)} productList={productList} isLoading={isProductLoading} />
                                 {(item.spec || item.packing || item.usage) && (
-                                    <div className="mt-2 bg-gray-50 rounded-lg p-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                                    <div className="mt-2 bg-gray-50 rounded-lg p-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700">
                                         {item.spec && <span>規格: <b>{item.spec}</b></span>}
-                                        {item.packing && <span>包裝: <b>{item.packing}</b></span>}
+                                        {item.packing && <span>包裝數: <b>{item.packing}</b></span>}
+                                        {/* 🌟 補上用量顯示 */}
+                                        {item.usage && <span>用量/坪: <b>{item.usage}</b></span>}
                                     </div>
                                 )}
                                 <div className="flex flex-col sm:flex-row gap-4">
