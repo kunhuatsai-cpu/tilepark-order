@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- 🛑 強制瀏覽器不快取 (解決看到舊版網頁的問題) -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <title>Tile Park 訂貨系統 (Live Data)</title>
     
     <!-- Tailwind CSS -->
@@ -59,11 +65,34 @@
 
     <div id="root"></div>
 
+    <!-- 🛑 安全地移除可能殘留的 Service Worker (已加入錯誤處理，防止在受限環境報錯) -->
+    <script>
+        try {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations()
+                    .then(function(registrations) {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                        }
+                    })
+                    .catch(function(err) {
+                        // 靜默處理錯誤，這在某些 iframe 或預覽環境是正常的
+                        console.log('Service Worker cleanup skipped (restricted environment).');
+                    });
+            }
+        } catch (e) {
+            console.log('Service Worker API not available.');
+        }
+    </script>
+
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
         // 🛑 Web App 網址
         const GOOGLE_SCRIPT_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbyKP7YGKdSFYYJMEI2tH7t3u3lILjfc3XGK-xlFx0o3se2_QnnvP-vNtEGcgZXt1Xx7/exec";
+        
+        // 🛑 版本號 (更新版本號)
+        const APP_VERSION = "v2025.01.02-3";
 
         // --- 🛠️ 內建 SVG 圖示 ---
         const IconWrapper = ({ children, size = 20, className = "", ...props }) => (
@@ -141,6 +170,13 @@
                                 <div className="flex justify-between border-t border-gray-100 pt-2"><span className="text-gray-500">收貨人</span><span className="font-bold text-gray-800">{formData.deliveryContact}</span></div>
                                 <div className="flex justify-between"><span className="text-gray-500">收貨電話</span><span className="font-bold text-gray-800 font-mono">{formData.deliveryPhone}</span></div>
                             </>
+                        )}
+                        {/* 🌟 新增：出貨備註顯示 */}
+                        {formData.deliveryNote && (
+                            <div className="flex flex-col gap-1 border-t border-gray-100 pt-2 mt-2">
+                                <span className="text-gray-500">出貨備註</span>
+                                <span className="font-bold text-gray-800 text-right text-orange-600">{formData.deliveryNote}</span>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -275,6 +311,7 @@
           const [formData, setFormData] = useState({
             orderType: '新案場', deliveryDate: today, deliveryTime: '上午 (09-12)',
             deliveryContact: '', deliveryPhone: '', deliveryAddress: '',
+            deliveryNote: '', // 🌟 新增狀態：出貨備註
             orderCompany: '', orderContact: '', orderPhone: '',
           });
 
@@ -377,7 +414,7 @@
 
           const copyOrder = () => {
             const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name}${it.spec ? `(${it.spec})` : ''} x ${it.qty}${it.unit || '張'}${it.note ? ` [${it.note}]` : ''}`).join('\n');
-            const text = `【Tile Park ${isReservation ? '保留單' : '訂單'}】\n單號：${orderId}\n公司：${formData.orderCompany}\n內容：\n${itemsList}\n日期：${formData.deliveryDate}\n地址：${formData.deliveryAddress}`;
+            const text = `【Tile Park ${isReservation ? '保留單' : '訂單'}】\n單號：${orderId}\n公司：${formData.orderCompany}\n內容：\n${itemsList}\n日期：${formData.deliveryDate}\n地址：${formData.deliveryAddress}\n備註：${formData.deliveryNote || '無'}`;
             if (navigator.clipboard) { navigator.clipboard.writeText(text).then(() => setModalData({ msg: "✅ 已複製到剪貼簿！", type: 'success' })); }
           };
 
@@ -511,6 +548,10 @@
                             <input required={!isReservation} placeholder="收貨人姓名" className="w-full bg-gray-50 rounded-xl p-4 text-base font-bold" value={formData.deliveryContact} onChange={e => setFormData({...formData, deliveryContact: e.target.value})} />
                             <input required={!isReservation} placeholder="收貨人電話" type="tel" className="w-full bg-gray-50 rounded-xl p-4 text-base font-bold" value={formData.deliveryPhone} onChange={e => setFormData({...formData, deliveryPhone: e.target.value})} />
                           </div>
+                          {/* 🌟 新增：出貨備註欄位 */}
+                          <div className="pt-6 border-t border-gray-50">
+                             <input placeholder="出貨備註 (例如: 需用小車、到貨前請電聯...)" className="w-full bg-gray-50 rounded-xl p-5 text-lg font-bold border-2 border-transparent focus:border-orange-100 transition-all outline-none" value={formData.deliveryNote} onChange={e => setFormData({...formData, deliveryNote: e.target.value})} />
+                          </div>
                         </div>
                       </section>
 
@@ -532,7 +573,7 @@
                             <a href="https://line.me/ti/p/@tileparktw" target="_blank" rel="noreferrer" className="flex items-center gap-2 font-bold text-gray-500"><Icons.Line size={12} /> LINE: @tileparktw</a>
                           </div>
                         </div>
-                        <div className="text-[10px] text-gray-300 font-serif tracking-[1em] uppercase py-4">TILE PARK TAIWAN</div>
+                        <div className="text-[10px] text-gray-300 font-serif tracking-[1em] uppercase py-4">TILE PARK TAIWAN <span className="opacity-50">{APP_VERSION}</span></div>
                       </div>
                     </div>
                     <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-xl border-t md:static md:bg-transparent md:border-none md:p-0 md:mt-16 z-50">
