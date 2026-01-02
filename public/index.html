@@ -4,12 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 🛑 強制瀏覽器不快取 (解決看到舊版網頁的問題) -->
+    <!-- 🛑 核彈級防快取設定 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
     <title>Tile Park 訂貨系統 (Live Data)</title>
+
+    <!-- 🛑 將清除 Service Worker 的程式碼移到最上方優先執行 -->
+    <script>
+        // 立即執行：清除所有快取與 Service Workers (加入完整錯誤處理，防止在受限環境報錯)
+        (function() {
+            try {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations()
+                        .then(function(registrations) {
+                            for(let registration of registrations) {
+                                registration.unregister()
+                                    .catch(function(err) { console.warn('SW Unregister failed:', err); });
+                            }
+                        })
+                        .catch(function(err) {
+                            // 靜默處理：在某些預覽環境無法存取是正常的
+                            console.warn('ServiceWorker getRegistrations failed (restricted environment):', err);
+                        });
+                }
+            } catch (e) {
+                console.warn('ServiceWorker API not accessible:', e);
+            }
+
+            // 強制清除快取儲存空間
+            try {
+                if ('caches' in window) {
+                    caches.keys()
+                        .then(function(names) {
+                            for (let name of names) caches.delete(name);
+                        })
+                        .catch(function(err) {
+                            console.warn('Cache access failed:', err);
+                        });
+                }
+            } catch (e) {
+                console.warn('Cache API not accessible:', e);
+            }
+        })();
+    </script>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -47,43 +86,11 @@
             background-color: #c25e00;
             border-color: #c25e00;
         }
-        
-        /* 載入中遮罩 */
-        .loading-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(5px);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
     </style>
 </head>
 <body>
 
     <div id="root"></div>
-
-    <!-- 🛑 安全地移除可能殘留的 Service Worker (已加入錯誤處理，防止在受限環境報錯) -->
-    <script>
-        try {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations()
-                    .then(function(registrations) {
-                        for(let registration of registrations) {
-                            registration.unregister();
-                        }
-                    })
-                    .catch(function(err) {
-                        // 靜默處理錯誤，這在某些 iframe 或預覽環境是正常的
-                        console.log('Service Worker cleanup skipped (restricted environment).');
-                    });
-            }
-        } catch (e) {
-            console.log('Service Worker API not available.');
-        }
-    </script>
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
@@ -91,8 +98,8 @@
         // 🛑 Web App 網址
         const GOOGLE_SCRIPT_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbyKP7YGKdSFYYJMEI2tH7t3u3lILjfc3XGK-xlFx0o3se2_QnnvP-vNtEGcgZXt1Xx7/exec";
         
-        // 🛑 版本號 (更新版本號)
-        const APP_VERSION = "v2025.01.02-3";
+        // 🛑 版本號 (這裡如果沒變，代表您還在舊版)
+        const APP_VERSION = "v2025.01.02-FINAL-2";
 
         // --- 🛠️ 內建 SVG 圖示 ---
         const IconWrapper = ({ children, size = 20, className = "", ...props }) => (
@@ -366,6 +373,13 @@
             } catch (e) {}
           }, [fetchProducts]);
 
+          // 🌟 強制更新版本的函數 (繞過快取)
+          const forceReload = () => {
+             if(confirm('確定要強制重新整理頁面以獲取最新版本嗎？\n(這將會清除您目前輸入但未送出的資料)')) {
+                 window.location.reload(true);
+             }
+          };
+
           const addItem = () => {
             setItems([...items, { id: Date.now(), name: '', qty: '', unit: '張', note: '', spec: '', packing: '', usage: '' }]);
             setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
@@ -573,7 +587,11 @@
                             <a href="https://line.me/ti/p/@tileparktw" target="_blank" rel="noreferrer" className="flex items-center gap-2 font-bold text-gray-500"><Icons.Line size={12} /> LINE: @tileparktw</a>
                           </div>
                         </div>
-                        <div className="text-[10px] text-gray-300 font-serif tracking-[1em] uppercase py-4">TILE PARK TAIWAN <span className="opacity-50">{APP_VERSION}</span></div>
+                        <div className="text-[10px] text-gray-300 font-serif tracking-[1em] uppercase py-4 flex flex-col gap-2">
+                           <span>TILE PARK TAIWAN <span className="opacity-50 text-orange-500">{APP_VERSION}</span></span>
+                           {/* 🌟 這裡新增一個隱藏的手動更新按鈕，如果版本沒變，請按這裡 */}
+                           <button onClick={forceReload} className="text-[9px] text-red-300 underline bg-transparent border-none">找不到備註欄？點此強制更新</button>
+                        </div>
                       </div>
                     </div>
                     <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-xl border-t md:static md:bg-transparent md:border-none md:p-0 md:mt-16 z-50">

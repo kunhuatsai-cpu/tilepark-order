@@ -1,0 +1,516 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+// 🛑 Web App 網址
+const GOOGLE_SCRIPT_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbyKP7YGKdSFYYJMEI2tH7t3u3lILjfc3XGK-xlFx0o3se2_QnnvP-vNtEGcgZXt1Xx7/exec";
+
+// 🛑 版本號
+const APP_VERSION = "v2025.01.02-FINAL-2";
+
+// --- 🛠️ 內建 SVG 圖示 ---
+const IconWrapper = ({ children, size = 20, className = "", ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
+);
+
+const Icons = {
+  Bag: (p) => <IconWrapper {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></IconWrapper>,
+  Truck: (p) => <IconWrapper {...p}><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></IconWrapper>,
+  User: (p) => <IconWrapper {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconWrapper>,
+  Trash: (p) => <IconWrapper {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></IconWrapper>,
+  Check: (p) => <IconWrapper {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconWrapper>,
+  Pin: (p) => <IconWrapper {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></IconWrapper>,
+  Phone: (p) => <IconWrapper {...p}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></IconWrapper>,
+  Next: (p) => <IconWrapper {...p}><path d="m9 18 6-6-6-6"/></IconWrapper>,
+  Archive: (p) => <IconWrapper {...p}><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></IconWrapper>,
+  Alert: (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></IconWrapper>,
+  Info: (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconWrapper>,
+  Search: (p) => <IconWrapper {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></IconWrapper>,
+  Refresh: (p) => <IconWrapper {...p}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></IconWrapper>,
+  Line: (p) => <IconWrapper {...p}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></IconWrapper>
+};
+
+const Logo = ({ isMobileHeader = false }) => (
+  <div className={`flex flex-col items-center justify-center ${isMobileHeader ? 'p-2' : 'md:p-4'}`}>
+    <img src="https://lh3.googleusercontent.com/d/1N9nrujoaGkFpdGhsBRgOs_WE-RgQEhU2" alt="TILE PARK" className={`${isMobileHeader ? 'w-40' : 'w-48 md:w-60 lg:w-64'} object-contain transition-all hover:scale-105`} style={{ height: 'auto' }} />
+  </div>
+);
+
+const Modal = ({ message, onClose, type = 'success' }) => (
+  <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-6 backdrop-blur-md animate-fade-in font-sans">
+    <div className="bg-white w-full max-w-xs rounded-3xl shadow-2xl overflow-hidden transform transition-all animate-pop-in">
+      <div className={`p-8 text-center ${type === 'success' ? 'bg-green-50' : 'bg-orange-50'}`}>
+        <div className={`mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-4 ${type === 'success' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-[#c25e00]'}`}>
+          {type === 'success' ? <Icons.Check size={28} /> : <Icons.Alert size={28} />}
+        </div>
+        <div className="text-gray-800 font-bold text-lg mb-2 whitespace-pre-wrap leading-relaxed">{message}</div>
+      </div>
+      <button onClick={onClose} className="w-full py-5 bg-[#222] text-white font-bold tracking-widest active:bg-black transition-colors">確定</button>
+    </div>
+  </div>
+);
+
+// 訂單確認視窗
+const ConfirmModal = ({ onClose, onConfirm, isReservation, formData, items }) => (
+  <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-6 backdrop-blur-md animate-fade-in font-sans">
+    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform transition-all animate-pop-in border border-gray-100 flex flex-col max-h-[90vh]">
+      <div className="p-6 text-center bg-white border-b border-gray-100 shrink-0">
+        <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-3 ring-4 ${isReservation ? 'bg-blue-50 text-blue-600 ring-blue-50/50' : 'bg-orange-50 text-[#c25e00] ring-orange-50/50'}`}>
+           {isReservation ? <Icons.Archive size={32} /> : <Icons.Alert size={32} />}
+        </div>
+        <h3 className="text-xl font-black text-gray-900 mb-1 tracking-wider">{isReservation ? '保留單確認' : '訂單確認'}</h3>
+        <p className="text-gray-500 text-xs font-medium">請核對以下資訊是否正確</p>
+      </div>
+      
+      <div className="p-6 overflow-y-auto custom-scrollbar text-left space-y-6 bg-gray-50">
+        {/* 客戶與送貨資訊 */}
+        <div className="space-y-3">
+            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1">基本資料</h4>
+            <div className="bg-white p-4 rounded-xl border border-gray-200 text-sm space-y-2 shadow-sm">
+                <div className="flex justify-between"><span className="text-gray-500">訂購公司</span><span className="font-bold text-gray-800">{formData.orderCompany}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">訂購人</span><span className="font-bold text-gray-800">{formData.orderContact}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">電話</span><span className="font-bold text-gray-800 font-mono">{formData.orderPhone}</span></div>
+            </div>
+            
+            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1 mt-4">出貨/需求資訊</h4>
+            <div className="bg-white p-4 rounded-xl border border-gray-200 text-sm space-y-2 shadow-sm">
+                <div className="flex justify-between"><span className="text-gray-500">日期</span><span className="font-bold text-gray-800">{formData.deliveryDate} ({formData.deliveryTime})</span></div>
+                <div className="flex flex-col gap-1">
+                    <span className="text-gray-500">地址/案件</span>
+                    <span className="font-bold text-gray-800 text-right">{formData.deliveryAddress}</span>
+                </div>
+                {!isReservation && (
+                    <>
+                        <div className="flex justify-between border-t border-gray-100 pt-2"><span className="text-gray-500">收貨人</span><span className="font-bold text-gray-800">{formData.deliveryContact}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">收貨電話</span><span className="font-bold text-gray-800 font-mono">{formData.deliveryPhone}</span></div>
+                    </>
+                )}
+                {/* 出貨備註顯示 */}
+                {formData.deliveryNote && (
+                    <div className="flex flex-col gap-1 border-t border-gray-100 pt-2 mt-2">
+                        <span className="text-gray-500">出貨備註</span>
+                        <span className="font-bold text-gray-800 text-right text-orange-600">{formData.deliveryNote}</span>
+                    </div>
+                )}
+            </div>
+        </div>
+
+        {/* 產品清單 */}
+        <div className="space-y-3">
+            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1">訂購品項</h4>
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                {items.map((item, idx) => (
+                    <div key={idx} className="p-3 border-b border-gray-100 last:border-0 text-sm flex justify-between items-center">
+                        <div className="flex flex-col">
+                            <span className="font-bold text-gray-800">{item.name}</span>
+                            {item.spec && <span className="text-xs text-gray-400">{item.spec}</span>}
+                        </div>
+                        <div className="font-black text-gray-800 font-mono bg-gray-50 px-2 py-1 rounded">
+                            {item.qty} <span className="text-xs font-normal text-gray-500">{item.unit}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        {/* 警告標語 */}
+        {isReservation ? (
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-left space-y-2 text-xs text-blue-800">
+               <p className="font-bold flex items-center gap-2"><Icons.Info size={14}/> 需求註記 ≠ 正式保留</p>
+               <p className="opacity-80">僅為系統註記需求，實際出貨仍以「確認訂單＋當時庫存」為準。保留期限一個月。</p>
+            </div>
+        ) : (
+            <div className="p-4 bg-red-50 rounded-xl border border-red-100 text-left text-xs text-red-800">
+               <p className="font-bold flex items-center gap-2"><Icons.Alert size={14}/> 特別聲明</p>
+               <p className="opacity-80 mt-1">本公司所有產品經出貨皆不退換貨，請務必確認規格與數量。</p>
+            </div>
+        )}
+      </div>
+
+      <div className="flex border-t border-gray-100 shrink-0 bg-white p-4 gap-4">
+        <button onClick={onClose} className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-xl font-bold tracking-widest hover:bg-gray-200 transition-colors">返回修改</button>
+        <button onClick={onConfirm} className={`flex-1 py-4 text-white rounded-xl font-bold tracking-widest transition-colors shadow-lg ${isReservation ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-200' : 'bg-[#222] hover:bg-[#c25e00] shadow-orange-200'}`}>確認送出</button>
+      </div>
+    </div>
+  </div>
+);
+
+// 產品搜尋組件
+const ProductAutocomplete = ({ value, onChange, onSelect, productList, isLoading }) => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setShowSuggestions(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => { document.removeEventListener("mousedown", handleClickOutside); document.removeEventListener("touchstart", handleClickOutside); };
+  }, []);
+
+  useEffect(() => {
+     if (value && productList.length > 0) {
+        const lowerValue = value.toLowerCase();
+        const filtered = productList.filter(p => {
+            const searchStr = `${p.id} ${p.name}`.toLowerCase();
+            return searchStr.includes(lowerValue);
+        }).slice(0, 10);
+        
+        setSuggestions(filtered);
+        if(filtered.length > 0) setShowSuggestions(true);
+     }
+  }, [productList, value]); 
+
+  const handleSelect = (product) => {
+    onSelect(product);
+    setShowSuggestions(false);
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative w-full">
+      <div className="relative">
+        <input required className={`w-full bg-gray-50 border-none rounded-xl px-5 py-4 pl-12 text-lg md:text-xl font-bold focus:ring-2 focus:ring-[#c25e00]/20 outline-none transition-all placeholder:text-gray-300 font-sans ${isLoading ? 'opacity-70 cursor-wait bg-gray-100' : ''}`}
+          placeholder={isLoading ? "🔍 連線資料庫中..." : "輸入貨號或品名搜尋"} 
+          value={value} 
+          onChange={(e) => { onChange(e.target.value); if(!e.target.value) setShowSuggestions(false); }} 
+          onFocus={() => value && suggestions.length > 0 && setShowSuggestions(true)}
+          disabled={isLoading}
+        />
+        <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none ${isLoading ? 'animate-spin text-[#c25e00]' : 'text-gray-300'}`}>
+            {isLoading ? <Icons.Refresh size={20} /> : <Icons.Search size={20} />}
+        </div>
+      </div>
+      
+      {showSuggestions && suggestions.length > 0 && (
+        <ul className="absolute z-50 w-full bg-white border border-gray-100 rounded-xl mt-2 shadow-2xl max-h-72 overflow-y-auto custom-scrollbar animate-fade-in">
+          {suggestions.map((p, idx) => (
+            <li key={idx} onClick={() => handleSelect(p)} onTouchEnd={(e) => { e.preventDefault(); handleSelect(p); }} className="px-5 py-4 hover:bg-orange-50 cursor-pointer transition-colors border-b border-gray-50 last:border-none group">
+              <div className="flex justify-between items-start">
+                <div className="flex flex-col">
+                    <span className="font-black text-[#c25e00] text-sm mb-1">{p.id}</span>
+                    <span className="text-gray-800 font-bold text-base">{p.name}</span>
+                </div>
+                <div className="flex flex-col items-end gap-1 text-right min-w-[80px]">
+                    {p.spec && <span className="text-xs text-gray-600 font-bold bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap">{p.spec}</span>}
+                    {p.packing && <span className="text-[10px] text-gray-500 whitespace-nowrap">包裝數: {p.packing}</span>}
+                    {p.usage && <span className="text-[10px] text-gray-500 whitespace-nowrap">用量/坪: {p.usage}</span>}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+function App() {
+  const [styleLoaded, setStyleLoaded] = useState(false);
+  const [productList, setProductList] = useState([]);
+  const [isProductLoading, setIsProductLoading] = useState(true);
+  const [dbStatus, setDbStatus] = useState('loading'); 
+  const [modalData, setModalData] = useState(null);
+  const [rememberMe, setRememberMe] = useState(true); 
+
+  const [items, setItems] = useState([{ id: 1, name: '', qty: '', unit: '張', note: '', spec: '', packing: '', usage: '' }]); 
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [orderId, setOrderId] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isReservation, setIsReservation] = useState(false);
+  
+  const today = new Date().toISOString().split('T')[0];
+  const [formData, setFormData] = useState({
+    orderType: '新案場', deliveryDate: today, deliveryTime: '上午 (09-12)',
+    deliveryContact: '', deliveryPhone: '', deliveryAddress: '',
+    deliveryNote: '', 
+    orderCompany: '', orderContact: '', orderPhone: '',
+  });
+
+  const fetchProducts = useCallback(async (showToast = false) => {
+    setIsProductLoading(true);
+    setDbStatus('loading');
+    
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_SUBMIT_URL);
+        const data = await response.json();
+
+        const inventoryData = (data && data.inventory) ? data.inventory : data;
+
+        if (inventoryData && Array.isArray(inventoryData) && inventoryData.length > 0) {
+            const uniqueMap = new Map();
+            inventoryData.forEach(item => {
+                if (item.id && !uniqueMap.has(item.id)) {
+                    uniqueMap.set(item.id, item);
+                }
+            });
+            const uniqueData = Array.from(uniqueMap.values());
+
+            setProductList(uniqueData);
+            setDbStatus('success');
+            if(showToast) setModalData({ msg: `✅ 成功載入 ${uniqueData.length} 項產品 (已去重)！`, type: 'success' });
+        } else if (data.result === 'error') {
+            throw new Error(data.message);
+        } else {
+            throw new Error("資料庫為空或格式錯誤");
+        }
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        setDbStatus('error');
+        setModalData({ msg: `❌ 無法讀取資料庫：${error.message || "連線失敗"}`, type: 'error' });
+    } finally {
+        setIsProductLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // 檢查 tailwind 是否載入 (注意：這在標準 React 專案中可能需要調整檢查方式)
+    if (window.tailwind) setStyleLoaded(true);
+    else setTimeout(() => setStyleLoaded(true), 500);
+
+    // 清除快取邏輯
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.unregister().catch(err => console.warn('SW unregister failed', err));
+            }
+        }).catch(err => console.warn('SW API access failed', err));
+    }
+
+    fetchProducts(false);
+    try {
+        const savedData = localStorage.getItem('tilePark_userData');
+        if (savedData) {
+            const parsed = JSON.parse(savedData);
+            setFormData(prev => ({ ...prev, orderCompany: parsed.orderCompany || '', orderContact: parsed.orderContact || '', orderPhone: parsed.orderPhone || '' }));
+        }
+    } catch (e) {}
+  }, [fetchProducts]);
+
+  const forceReload = () => {
+     if(window.confirm('確定要強制重新整理頁面以獲取最新版本嗎？\n(這將會清除您目前輸入但未送出的資料)')) {
+         window.location.reload(true);
+     }
+  };
+
+  const addItem = () => {
+    setItems([...items, { id: Date.now(), name: '', qty: '', unit: '張', note: '', spec: '', packing: '', usage: '' }]);
+    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
+  };
+
+  const removeItem = (id) => items.length > 1 && setItems(items.filter(item => item.id !== id));
+  const updateItem = (id, field, value) => setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+
+  const handleProductSelect = (id, product) => {
+    setItems(items.map(item => {
+      if (item.id === id) {
+        return { 
+            ...item, 
+            name: product.name, 
+            unit: product.unit || '張', 
+            spec: product.spec, 
+            packing: product.packing,
+            usage: product.usage 
+        };
+      }
+      return item;
+    }));
+  };
+
+  const handleSubmit = (e) => { e.preventDefault(); setShowConfirm(true); };
+
+  const handleFinalSubmit = async () => {
+    setShowConfirm(false);
+    setLoading(true);
+    if (rememberMe) localStorage.setItem('tilePark_userData', JSON.stringify({ orderCompany: formData.orderCompany, orderContact: formData.orderContact, orderPhone: formData.orderPhone }));
+    
+    const newOrderId = `TILE-${new Date().toISOString().slice(5,10).replace('-','')}${Math.floor(1000 + Math.random() * 9000)}`;
+    const submitData = { action: 'create', orderId: newOrderId, items: items, ...formData, orderType: isReservation ? `${formData.orderType} (保留庫存)` : formData.orderType, timestamp: new Date().toLocaleString() };
+    
+    try {
+      const formDataEncoded = new URLSearchParams();
+      formDataEncoded.append('payload', JSON.stringify(submitData));
+      await fetch(GOOGLE_SCRIPT_SUBMIT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formDataEncoded.toString() });
+      setOrderId(newOrderId);
+      setSubmitted(true);
+      window.scrollTo(0, 0);
+    } catch (error) {
+      setModalData({ msg: "送出失敗，請聯繫客服。", type: 'error' });
+    } finally { setLoading(false); }
+  };
+
+  const copyOrder = () => {
+    const itemsList = items.map((it, idx) => `${idx + 1}. ${it.name}${it.spec ? `(${it.spec})` : ''} x ${it.qty}${it.unit || '張'}${it.note ? ` [${it.note}]` : ''}`).join('\n');
+    const text = `【Tile Park ${isReservation ? '保留單' : '訂單'}】\n單號：${orderId}\n公司：${formData.orderCompany}\n內容：\n${itemsList}\n日期：${formData.deliveryDate}\n地址：${formData.deliveryAddress}\n備註：${formData.deliveryNote || '無'}`;
+    if (navigator.clipboard) { navigator.clipboard.writeText(text).then(() => setModalData({ msg: "✅ 已複製到剪貼簿！", type: 'success' })); }
+  };
+
+  if (!styleLoaded) return <div className="fixed inset-0 bg-white flex items-center justify-center font-bold text-[#c25e00] animate-pulse">TILE PARK LOADING...</div>;
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6 animate-fade-in font-sans">
+        {modalData && <Modal message={modalData.msg} type={modalData.type} onClose={() => setModalData(null)} />}
+        <div className="bg-white w-full max-w-sm shadow-2xl rounded-3xl overflow-hidden mb-8 border border-gray-100">
+          <div className={`h-2.5 w-full ${isReservation ? 'bg-blue-600' : 'bg-[#c25e00]'}`}></div>
+          <div className="p-10 text-center">
+            <div className="w-20 h-20 rounded-full bg-green-50 text-green-500 flex items-center justify-center mx-auto mb-6"><Icons.Check size={40} /></div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">{isReservation ? '保留單已送出' : '訂單已送出'}</h2>
+            <p className="font-mono text-[#c25e00] font-bold mb-8">ID: {orderId}</p>
+            <div className="bg-gray-50 rounded-2xl p-6 text-left space-y-4 text-sm">
+               <div className="flex justify-between"><span className="text-gray-400">訂購公司</span><span className="font-bold">{formData.orderCompany}</span></div>
+               <div className="flex justify-between"><span className="text-gray-400">日期</span><span className="font-bold">{formData.deliveryDate}</span></div>
+            </div>
+          </div>
+        </div>
+        <div className="w-full max-w-sm space-y-4">
+           <button onClick={copyOrder} className="w-full bg-[#222] text-white py-5 rounded-2xl font-black shadow-xl flex items-center justify-center gap-3">複製通知內容</button>
+           <button onClick={() => window.location.reload()} className="w-full py-4 text-gray-400 font-bold">返回首頁</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 font-sans text-gray-800 selection:bg-[#c25e00] selection:text-white overflow-x-hidden">
+      {modalData && <Modal message={modalData.msg} type={modalData.type} onClose={() => setModalData(null)} />}
+      {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} onConfirm={handleFinalSubmit} isReservation={isReservation} formData={formData} items={items} />}
+      <div className="w-full max-w-7xl mx-auto md:flex md:shadow-2xl md:min-h-screen bg-white md:overflow-hidden relative">
+        
+        <aside className="w-full md:w-[32%] lg:w-[28%] bg-white border-r border-gray-100 flex flex-col items-center justify-start md:justify-between p-8 pt-12 pb-12 shrink-0 border-b md:border-b-0">
+            <div className="flex flex-col items-center w-full"><Logo /></div>
+            <div className="hidden md:flex flex-col items-center text-center w-full px-2">
+                <div className="w-16 h-1.5 bg-[#c25e00] mb-8 rounded-full"></div>
+                <h2 className="text-xl font-black tracking-widest text-gray-900 leading-tight">薩鉅國際有限公司</h2>
+                <div className="text-xs md:text-sm text-gray-400 mt-6 space-y-4 font-medium">
+                    <p className="flex items-center justify-center gap-2"><Icons.Pin size={14} className="text-[#c25e00] shrink-0"/> 新北市板橋區金門街215巷78-5號</p>
+                    <p className="flex items-center justify-center gap-2"><Icons.Phone size={14} className="shrink-0"/> 02-86860028</p>
+                    <a href="https://line.me/ti/p/@tileparktw" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 hover:text-[#06C755] transition-colors font-bold text-gray-600"><Icons.Line size={14} className="shrink-0"/> LINE: @tileparktw</a>
+                </div>
+                <div className="pt-8 text-[10px] text-gray-300 font-serif tracking-[0.4em] uppercase">Authentic Japanese Tiles</div>
+            </div>
+        </aside>
+
+        <main className="flex-1 bg-gray-50 md:overflow-y-auto custom-scrollbar relative">
+          <form onSubmit={handleSubmit} className="p-4 md:p-10 lg:p-16 max-w-4xl mx-auto pb-32">
+            
+            <div className="space-y-16">
+              <section className="animate-fade-in-up">
+                <div className="flex items-center justify-between mb-5 mt-2 px-1"><div className="flex items-center gap-2"><div className="p-2.5 bg-orange-100 rounded-xl text-[#c25e00]"><Icons.User size={20} /></div><h3 className="font-black text-gray-800 text-base md:text-lg tracking-widest">訂購客戶資料</h3></div></div>
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm space-y-8">
+                  <div className="space-y-2">
+                    <label className="text-xs text-gray-400 font-black block">公司寶號 (抬頭)</label>
+                    <input required placeholder="請輸入完整公司名稱" className="w-full bg-gray-50 rounded-xl p-5 text-lg font-bold" value={formData.orderCompany} onChange={e => setFormData({...formData, orderCompany: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <input placeholder="訂購人姓名" className="w-full bg-gray-50 rounded-xl p-4 text-base font-bold" value={formData.orderContact} onChange={e => setFormData({...formData, orderContact: e.target.value})} />
+                      <input placeholder="聯絡電話" type="tel" className="w-full bg-gray-50 rounded-xl p-4 text-base font-bold" value={formData.orderPhone} onChange={e => setFormData({...formData, orderPhone: e.target.value})} />
+                  </div>
+                </div>
+              </section>
+
+              <div className="grid grid-cols-1 gap-4">
+                  <div className="bg-gray-200/50 p-1.5 rounded-2xl flex shadow-inner">
+                  {['新案場', '案場追加訂單'].map((type) => (
+                      <button key={type} type="button" onClick={() => setFormData({...formData, orderType: type})} className={`flex-1 py-3 text-sm md:text-lg font-black rounded-xl transition-all ${formData.orderType === type ? 'bg-white text-[#c25e00] shadow-md' : 'text-gray-400'}`}>{type}</button>
+                  ))}
+                  </div>
+                  <div className={`p-1.5 rounded-2xl flex shadow-inner transition-colors duration-300 ${isReservation ? 'bg-blue-100/50' : 'bg-green-100/50'}`}>
+                      <button type="button" onClick={() => setIsReservation(false)} className={`flex-1 py-3 text-sm md:text-lg font-black rounded-xl transition-all flex items-center justify-center gap-2 ${!isReservation ? 'bg-white text-[#c25e00] shadow-md' : 'text-gray-400'}`}><Icons.Truck size={18} /> 正式出貨</button>
+                      <button type="button" onClick={() => setIsReservation(true)} className={`flex-1 py-3 text-sm md:text-lg font-black rounded-xl transition-all flex items-center justify-center gap-2 ${isReservation ? 'bg-white text-blue-600 shadow-md' : 'text-gray-400'}`}><Icons.Archive size={18} /> 僅保留庫存</button>
+                  </div>
+              </div>
+
+              <section className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                <div className="flex items-center justify-between mb-5 mt-2 px-1">
+                    <div className="flex items-center gap-2"><div className="p-2.5 bg-orange-100 rounded-xl text-[#c25e00]">{isReservation ? <Icons.Archive size={20} /> : <Icons.Bag size={20} />}</div><h3 className="font-black text-gray-800 text-base md:text-lg tracking-widest">{isReservation ? "保留品項清單" : "訂購內容清單"}</h3></div>
+                    <div className="flex items-center gap-2">
+                        {dbStatus === 'success' && <span className="flex items-center gap-1 text-[10px] text-green-600 font-bold"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>已連線</span>}
+                        <button type="button" onClick={() => fetchProducts(true)} className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full"><Icons.Refresh size={12} /></button>
+                    </div>
+                </div>
+                <div className="space-y-5">
+                  {items.map((item, index) => (
+                    <div key={item.id} className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 relative">
+                      <div className="absolute top-0 right-0 bg-gray-100 text-[11px] px-4 py-2 rounded-bl-2xl text-gray-400 font-bold">ITEM {index + 1}</div>
+                      <div className="space-y-6">
+                        <ProductAutocomplete value={item.name} onChange={(val) => updateItem(item.id, 'name', val)} onSelect={(product) => handleProductSelect(item.id, product)} productList={productList} isLoading={isProductLoading} />
+                        {(item.spec || item.packing || item.usage) && (
+                            <div className="mt-2 bg-gray-50 rounded-lg p-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700">
+                                {item.spec && <span>規格: <b>{item.spec}</b></span>}
+                                {item.packing && <span>包裝數: <b>{item.packing}</b></span>}
+                                {item.usage && <span>用量/坪: <b>{item.usage}</b></span>}
+                            </div>
+                        )}
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-[2] flex gap-2 h-[60px]">
+                            <input required className="flex-1 bg-gray-50 rounded-xl px-5 text-lg font-bold text-center" placeholder="0" value={item.qty} onChange={e => updateItem(item.id, 'qty', e.target.value)} />
+                            <select className="flex-1 bg-gray-100 rounded-xl px-4 text-lg font-bold" value={item.unit} onChange={e => updateItem(item.id, 'unit', e.target.value)}>
+                                <option value="張">張</option><option value="片">片</option><option value="才">才</option><option value="支">支</option><option value="箱">箱</option><option value="組">組</option><option value="式">式</option>
+                            </select>
+                          </div>
+                          <input className="flex-[3] bg-gray-50 rounded-xl px-5 text-lg h-[60px]" placeholder="備註" value={item.note} onChange={e => updateItem(item.id, 'note', e.target.value)} />
+                        </div>
+                      </div>
+                      {items.length > 1 && <button type="button" onClick={() => removeItem(item.id)} className="absolute -left-3 -top-3 bg-white text-red-400 shadow-lg rounded-full p-2.5 border border-red-50"><Icons.Trash size={18} /></button>}
+                    </div>
+                  ))}
+                  <button type="button" onClick={addItem} className="w-full py-5 border-2 border-dashed border-gray-200 text-gray-400 rounded-[2rem] font-black flex items-center justify-center gap-3">新增品項</button>
+                </div>
+              </section>
+
+              <section className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                <div className="flex items-center justify-between mb-5 mt-2 px-1"><div className="flex items-center gap-2"><div className="p-2.5 bg-orange-100 rounded-xl text-[#c25e00]"><Icons.Truck size={20} /></div><h3 className="font-black text-gray-800 text-base md:text-lg tracking-widest">{isReservation ? "預計需求資訊" : "出貨與現場資訊"}</h3></div></div>
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <input required type="date" className="w-full bg-gray-50 rounded-xl p-4 text-base font-bold" value={formData.deliveryDate} onChange={e => setFormData({...formData, deliveryDate: e.target.value})} />
+                    <select className="w-full bg-gray-50 rounded-xl p-4 text-base font-bold" value={formData.deliveryTime} onChange={e => setFormData({...formData, deliveryTime: e.target.value})}><option>上午 (09-12)</option><option>下午 (13-17)</option><option>不限時間</option></select>
+                  </div>
+                  <input required={!isReservation} placeholder={isReservation ? "預計送貨地址 / 案件名稱 (可後補)" : "請填寫完整出貨地址"} className="w-full bg-gray-50 rounded-xl p-5 text-lg font-bold" value={formData.deliveryAddress} onChange={e => setFormData({...formData, deliveryAddress: e.target.value})} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-50">
+                    <input required={!isReservation} placeholder="收貨人姓名" className="w-full bg-gray-50 rounded-xl p-4 text-base font-bold" value={formData.deliveryContact} onChange={e => setFormData({...formData, deliveryContact: e.target.value})} />
+                    <input required={!isReservation} placeholder="收貨人電話" type="tel" className="w-full bg-gray-50 rounded-xl p-4 text-base font-bold" value={formData.deliveryPhone} onChange={e => setFormData({...formData, deliveryPhone: e.target.value})} />
+                  </div>
+                  <div className="pt-6 border-t border-gray-50">
+                     <input placeholder="出貨備註 (例如: 需用小車、到貨前請電聯...)" className="w-full bg-gray-50 rounded-xl p-5 text-lg font-bold border-2 border-transparent focus:border-orange-100 transition-all outline-none" value={formData.deliveryNote} onChange={e => setFormData({...formData, deliveryNote: e.target.value})} />
+                  </div>
+                </div>
+              </section>
+
+              <div className="flex items-center justify-center mb-6">
+                <label className="flex items-center cursor-pointer group">
+                    <input type="checkbox" className="hidden" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}/>
+                    <div className={`w-6 h-6 border-2 rounded-lg mr-3 flex items-center justify-center transition-all ${rememberMe ? 'bg-[#c25e00] border-[#c25e00]' : 'border-gray-300'}`}>{rememberMe && <Icons.Check size={14} className="text-white"/>}</div>
+                    <span className={`text-sm font-bold ${rememberMe ? 'text-[#c25e00]' : 'text-gray-400'}`}>記住訂購人資料，下次自動帶入</span>
+                </label>
+              </div>
+
+              <div className="mt-8 mb-24 md:hidden space-y-5 text-center border-t border-gray-200 pt-10 px-4">
+                <div className="space-y-4">
+                  <div className="w-10 h-1 bg-[#c25e00] mx-auto mb-4 rounded-full"></div>
+                  <h4 className="font-black text-gray-900 tracking-[0.1em] text-lg">薩鉅國際有限公司</h4>
+                  <div className="text-[11px] text-gray-400 space-y-3 flex flex-col items-center font-medium">
+                    <p className="flex items-center justify-center gap-2"><Icons.Pin size={12} className="text-[#c25e00]" /> 新北市板橋區金門街215巷78-5號</p>
+                    <div className="flex gap-6 justify-center"><a href="tel:0286860028" className="flex items-center gap-2 font-bold text-gray-500"><Icons.Phone size={12} /> 02-86860028</a></div>
+                    <a href="https://line.me/ti/p/@tileparktw" target="_blank" rel="noreferrer" className="flex items-center gap-2 font-bold text-gray-500"><Icons.Line size={12} /> LINE: @tileparktw</a>
+                  </div>
+                </div>
+                <div className="text-[10px] text-gray-300 font-serif tracking-[1em] uppercase py-4 flex flex-col gap-2">
+                   <span>TILE PARK TAIWAN <span className="opacity-50 text-orange-500">{APP_VERSION}</span></span>
+                   <button onClick={forceReload} className="text-[9px] text-red-300 underline bg-transparent border-none">找不到備註欄？點此強制更新</button>
+                </div>
+              </div>
+            </div>
+            <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-xl border-t md:static md:bg-transparent md:border-none md:p-0 md:mt-16 z-50">
+              <button type="submit" disabled={loading} className={`w-full text-white py-6 rounded-3xl font-black tracking-[0.4em] text-xl shadow-xl flex items-center justify-center gap-4 ${isReservation ? 'bg-blue-600' : 'bg-[#222]'}`}>
+                {loading ? <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div> : <>{isReservation ? '送出保留單' : '送出訂單'} <Icons.Next size={24} /></>}
+              </button>
+            </div>
+          </form>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default App;
